@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>JsonRpcSharp WebSocketClient</Description>
+    <Copyright>Juan Blanco</Copyright>
+    <AssemblyTitle>JsonRpcSharp.WebSocketClient</AssemblyTitle>
+    <VersionPrefix>$(JsonRpcSharpVersion)</VersionPrefix>
+    <TargetFrameworks>$(IpcWebSocketsFrameworks)</TargetFrameworks>
+    <AssemblyName>JsonRpcSharp.WebSocketClient</AssemblyName>
+    <PackageId>JsonRpcSharp.WebSocketClient</PackageId>
+    <PackageTags>Json;RPC</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\JsonRpcSharp.Client\JsonRpcSharp.Client.csproj" />
+    <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.2" />
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(TargetFramework)' == 'net461' ">
+    <DefineConstants>NET461</DefineConstants>
+  </PropertyGroup>
+
+</Project>
+
