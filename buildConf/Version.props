@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <VersionMajor>0</VersionMajor>
+    <VersionMinor>1</VersionMinor>
+    <VersionPatch>0</VersionPatch>
+    <RelSuffix>$(ReleaseSuffix)</RelSuffix>
+    <RelSuffix Condition=" '$(ReleaseSuffix)' == '' "></RelSuffix>
+    
+    <FullNugetVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)-$(RelSuffix)</FullNugetVersion> 
+    
+    <NugetVersion Condition=" '$(RelSuffix)' != '' ">$(FullNugetVersion)</NugetVersion> 
+    <NugetVersion Condition=" '$(NugetVersion)' == '' ">$(VersionMajor).$(VersionMinor).$(VersionPatch)</NugetVersion> 
+
+    <JsonRpcSharpVersion>$(NugetVersion)</JsonRpcSharpVersion>
+  </PropertyGroup>
+</Project>

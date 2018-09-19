@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <TargetNet35>true</TargetNet35>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'true' ">netstandard1.1;net35;net451</DefaultFrameworksUnitySupport>
+    <DefaultFrameworksUnitySupport Condition=" '$(TargetNet35)' == 'false' ">netstandard1.1;net451</DefaultFrameworksUnitySupport>
+    <DefaultFrameworks>netstandard1.1;net451</DefaultFrameworks>
+    <IpcWebSocketsFrameworks>net461;netstandard1.3;netcoreapp2.1</IpcWebSocketsFrameworks>
+    <IpcWebSocketsFrameworks Condition=" '$(TargetNet461)' == 'true'">net461;</IpcWebSocketsFrameworks>
+  </PropertyGroup>
+</Project>
