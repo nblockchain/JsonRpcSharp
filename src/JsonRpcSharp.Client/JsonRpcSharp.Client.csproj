@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+<Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Description>JsonRpcSharp.Client core library to use in conjunction with either the JsonRpcSharp.RpcClient, the JsonRpcSharp.IpcClient or other custom Rpc provider</Description>
+    <Copyright>Juan Blanco</Copyright>
+    <AssemblyTitle>JsonRpcSharp.Client</AssemblyTitle>
+    <VersionPrefix>$(JsonRpcSharpVersion)</VersionPrefix>
+    <TargetFrameworks>$(DefaultFrameworksUnitySupport)</TargetFrameworks>
+    <AssemblyName>JsonRpcSharp.Client</AssemblyName>
+    <PackageId>JsonRpcSharp.Client</PackageId>
+    <PackageTags>Json;RPC</PackageTags>
+  </PropertyGroup>
+
+<ItemGroup Condition=" '$(TargetFramework)' != 'net35'">
+  <PackageReference Include="Common.Logging.Core" Version="3.4.1">
+  </PackageReference>
+  <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+</ItemGroup>
+  
+</Project>
