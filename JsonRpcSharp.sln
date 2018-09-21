@@ -5,15 +5,17 @@ VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.Client", "src\JsonRpcSharp.Client\JsonRpcSharp.Client.csproj", "{84A6BAA7-32B3-4D99-9280-87023BFF0A5B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonRpcSharp.Client", "src\JsonRpcSharp.Client\JsonRpcSharp.Client.csproj", "{84A6BAA7-32B3-4D99-9280-87023BFF0A5B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.IpcClient", "src\JsonRpcSharp.IpcClient\JsonRpcSharp.IpcClient.csproj", "{3D85110C-80C3-4136-A828-22CB066362A0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonRpcSharp.IpcClient", "src\JsonRpcSharp.IpcClient\JsonRpcSharp.IpcClient.csproj", "{3D85110C-80C3-4136-A828-22CB066362A0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.RpcClient", "src\JsonRpcSharp.RpcClient\JsonRpcSharp.RpcClient.csproj", "{3F8D6B13-B483-4873-8946-106D25BF6212}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonRpcSharp.RpcClient", "src\JsonRpcSharp.RpcClient\JsonRpcSharp.RpcClient.csproj", "{3F8D6B13-B483-4873-8946-106D25BF6212}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.WebSocketClient", "src\JsonRpcSharp.WebSocketClient\JsonRpcSharp.WebSocketClient.csproj", "{82A720E5-CF5C-4963-86CE-BEEE3040B413}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonRpcSharp.WebSocketClient", "src\JsonRpcSharp.WebSocketClient\JsonRpcSharp.WebSocketClient.csproj", "{82A720E5-CF5C-4963-86CE-BEEE3040B413}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.UnixIpcClient", "src\JsonRpcSharp.UnixIpcClient\JsonRpcSharp.UnixIpcClient.csproj", "{B3BE5EF3-FBB8-4CDB-A6DF-A2E869A3C4EF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "JsonRpcSharp.UnixIpcClient", "src\JsonRpcSharp.UnixIpcClient\JsonRpcSharp.UnixIpcClient.csproj", "{B3BE5EF3-FBB8-4CDB-A6DF-A2E869A3C4EF}"
+EndProject
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "JsonRpcSharp.FsClient", "src\JsonRpcSharp.FsClient\JsonRpcSharp.FsClient.fsproj", "{F0E00927-8A04-4250-9FAA-94F7608B493C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -107,6 +109,22 @@ Global
 		{B3BE5EF3-FBB8-4CDB-A6DF-A2E869A3C4EF}.Release|x64.Build.0 = Release|Any CPU
 		{B3BE5EF3-FBB8-4CDB-A6DF-A2E869A3C4EF}.Release|x86.ActiveCfg = Release|Any CPU
 		{B3BE5EF3-FBB8-4CDB-A6DF-A2E869A3C4EF}.Release|x86.Build.0 = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|ARM.ActiveCfg = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|ARM.Build.0 = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|x64.Build.0 = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Debug|x86.Build.0 = Debug|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|ARM.ActiveCfg = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|ARM.Build.0 = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|x64.ActiveCfg = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|x64.Build.0 = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|x86.ActiveCfg = Release|Any CPU
+		{F0E00927-8A04-4250-9FAA-94F7608B493C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -117,6 +135,7 @@ Global
 		{3F8D6B13-B483-4873-8946-106D25BF6212} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{82A720E5-CF5C-4963-86CE-BEEE3040B413} = {962EC435-6130-4B75-BAC1-12323B067443}
 		{B3BE5EF3-FBB8-4CDB-A6DF-A2E869A3C4EF} = {962EC435-6130-4B75-BAC1-12323B067443}
+		{F0E00927-8A04-4250-9FAA-94F7608B493C} = {962EC435-6130-4B75-BAC1-12323B067443}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {07A44726-8749-4A9A-8079-FA3C3213BDC1}
