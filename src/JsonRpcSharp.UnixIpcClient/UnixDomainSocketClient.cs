@@ -131,14 +131,14 @@ namespace JsonRpcSharp.UnixIpcClient
 
                     if (responseBytes == null)
                     {
-                        throw new RpcClientUnknownException("Invalid response / null");
+                        throw new Client.RpcClientUnknownException("Invalid response / null");
                     }
 
                     var totalMegs = responseBytes.Length / 1024f / 1024f;
 
                     if (totalMegs > 10)
                     {
-                        throw new RpcClientUnknownException("Response exceeds 10MB it will be impossible to parse it");
+                        throw new Client.RpcClientUnknownException("Response exceeds 10MB it will be impossible to parse it");
                     }
 
                     var responseJson = Encoding.UTF8.GetString(responseBytes);
@@ -157,14 +157,14 @@ namespace JsonRpcSharp.UnixIpcClient
                         var rpcResponse = JsonConvert.DeserializeObject<RpcResponse>(responseJson, _jsonSerializationSettings);
                         if (rpcResponse == null)
                         {
-                            throw new RpcClientUnknownException($"Unable to parse response from the ipc server. Response Json: {responseJson}");
+                            throw new Client.RpcClientUnknownException($"Unable to parse response from the ipc server. Response Json: {responseJson}");
                         }
 
                         throw rpcResponse.Error.CreateException();
                     }
                     catch (NullReferenceException)
                     {
-                        throw new RpcClientUnknownException($"Unable to parse response from the ipc server. Response Json: {responseJson}");
+                        throw new Client.RpcClientUnknownException($"Unable to parse response from the ipc server. Response Json: {responseJson}");
                         //throw;
                     }
                 }
