@@ -29,12 +29,11 @@ module JsonRpcSharp =
     // BIG TODO:
     //   1. CONVERT THIS TO BE A CLASS THAT INHERITS FROM ClientBase CLASS
     type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
+
         [<Literal>]
         let minimumBufferSize = 512
 
         let IfNotNull f x = x |> Option.ofNullable |> Option.iter f
-
-        let unpackToken = function Some token -> token | None -> CancellationToken.None
 
         let GetArrayFromReadOnlyMemory memory: ArraySegment<byte> =
             match MemoryMarshal.TryGetArray memory with
@@ -58,11 +57,11 @@ module JsonRpcSharp =
             |> System.Buffers.BuffersExtensions.ToArray
             |> System.Text.Encoding.ASCII.GetString
 
-        let rec ReadPipeInternal (reader: PipeReader) (stringBuilder: StringBuilder) (tokenOption:Option<CancellationToken>) = async {
+        let rec ReadPipeInternal (reader: PipeReader) (stringBuilder: StringBuilder) = async {
             let processLine (line:ReadOnlySequence<byte>) =
                 line |> GetAsciiString |> stringBuilder.AppendLine |> ignore
-            
-            let! result = reader.ReadAsync(tokenOption |> unpackToken).AsTask() |> Async.AwaitTask
+
+            let! result = reader.ReadAsync().AsTask() |> Async.AwaitTask
 
             let rec keepAdvancingPosition buffer =
                 // How to call a ref extension method using extension syntax?
@@ -76,7 +75,7 @@ module JsonRpcSharp =
             keepAdvancingPosition result.Buffer
             reader.AdvanceTo(result.Buffer.Start, result.Buffer.End)
             if not result.IsCompleted then
-                return! ReadPipeInternal reader stringBuilder tokenOption
+                return! ReadPipeInternal reader stringBuilder
             else
                 return stringBuilder.ToString()
         }
@@ -112,7 +111,7 @@ module JsonRpcSharp =
 
         new(host: IPAddress, port: int) = new TcpClient((fun _ -> async { return host }), port)
 
-        member __.Request (request: string, tokenOption:Option<CancellationToken>): Async<string> = async {
+        member __.Request (request: string): Async<string> = async {
             use! socket = Connect()
             let buffer =
                 request + "\n"
@@ -122,7 +121,7 @@ module JsonRpcSharp =
             let! bytesReceived = socket.SendAsync(buffer, SocketFlags.None) |> Async.AwaitTask
             let pipe = Pipe()
             do! FillPipeAsync socket pipe.Writer
-            let! str = ReadPipe pipe.Reader tokenOption
+            let! str = ReadPipe pipe.Reader
             return str
         }
 
