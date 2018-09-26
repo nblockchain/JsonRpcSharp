@@ -7,6 +7,7 @@ using System.Net.Sockets;
 using Common.Logging;
 using JsonRpcSharp.Client;
 using JsonRpcSharp.Client.RpcMessages;
+using System.Threading;
 
 namespace JsonRpcSharp.IpcClient
 {
@@ -99,7 +100,7 @@ namespace JsonRpcSharp.IpcClient
             return memoryStream;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null, CancellationToken? cancellationToken = null)
         {
             var logger = new RpcLogger(_log);
             try
