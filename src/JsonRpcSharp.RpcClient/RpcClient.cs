@@ -38,7 +38,7 @@ namespace JsonRpcSharp.Client
             CreateNewHttpClient();
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null, CancellationToken? cancellationToken = null)
         {
             var logger = new RpcLogger(_log);
             try
@@ -46,12 +46,10 @@ namespace JsonRpcSharp.Client
                 var httpClient = GetOrCreateHttpClient();
                 var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
-
+                var effectiveCancellationToken = GetEffectiveCancellationToken(cancellationToken, ConnectionTimeout);
                 logger.LogRequest(rpcRequestJson);
 
-                var httpResponseMessage = await httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token).ConfigureAwait(false);
+                var httpResponseMessage = await httpClient.PostAsync(route, httpContent, effectiveCancellationToken).ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 
                 var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
