@@ -19,9 +19,6 @@ type ConnectionUnsuccessfulException =
 type NoResponseReceivedAfterRequestException() =
    inherit ConnectionUnsuccessfulException()
 
-type ServerUnresponsiveException() =
-   inherit ConnectionUnsuccessfulException()
-
 // Translation of https://github.com/davidfowl/TcpEcho/blob/master/src/Program.cs
 // TODO: CONVERT THIS TO BE A CLASS THAT INHERITS FROM ClientBase CLASS
 type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
