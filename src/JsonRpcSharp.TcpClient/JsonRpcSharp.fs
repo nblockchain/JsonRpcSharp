@@ -7,6 +7,7 @@ open System.IO.Pipelines
 open System.Net
 open System.Net.Sockets
 open System.Runtime.InteropServices
+open System.Threading
 
 type ConnectionUnsuccessfulException =
     inherit Exception
@@ -52,11 +53,14 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         |> System.Buffers.BuffersExtensions.ToArray
         |> System.Text.Encoding.ASCII.GetString
 
-    let rec ReadPipeInternal (reader: PipeReader) (stringBuilder: StringBuilder) = async {
+    let rec ReadPipeInternal (reader: PipeReader) (stringBuilder: StringBuilder) (cancellationTokenOption:Option<CancellationToken>) = async {
         let processLine (line:ReadOnlySequence<byte>) =
             line |> GetAsciiString |> stringBuilder.AppendLine |> ignore
 
-        let! result = reader.ReadAsync().AsTask() |> Async.AwaitTask
+        let! result =
+            match cancellationTokenOption with
+            | Some ct -> async { return! reader.ReadAsync(ct).AsTask() |> Async.AwaitTask }
+            | None    -> async { return! reader.ReadAsync().AsTask()   |> Async.AwaitTask }
 
         let rec keepAdvancingPosition buffer =
             // How to call a ref extension method using extension syntax?
@@ -70,7 +74,7 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         keepAdvancingPosition result.Buffer
         reader.AdvanceTo(result.Buffer.Start, result.Buffer.End)
         if not result.IsCompleted then
-            return! ReadPipeInternal reader stringBuilder
+            return! ReadPipeInternal reader stringBuilder cancellationTokenOption
         else
             return stringBuilder.ToString()
     }
@@ -106,7 +110,7 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
 
     new(host: IPAddress, port: int) = new TcpClient((fun _ -> async { return host }), port)
 
-    member __.Request (request: string): Async<string> = async {
+    member __.Request (request: string) (cancellationTokenOption:Option<CancellationToken>): Async<string> = async {
         use! socket = Connect()
         let buffer =
             request + "\n"
@@ -116,6 +120,6 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         let! bytesReceived = socket.SendAsync(buffer, SocketFlags.None) |> Async.AwaitTask
         let pipe = Pipe()
         do! FillPipeAsync socket pipe.Writer
-        let! str = ReadPipe pipe.Reader
+        let! str = ReadPipe pipe.Reader cancellationTokenOption
         return str
     }
