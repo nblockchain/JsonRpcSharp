@@ -1,0 +1,37 @@
+steps:
+- task: DotNetCoreInstaller@0
+  displayName: install dotnet 2.1.401
+  inputs:
+    packageType: 'sdk'
+    version: '2.1.401'
+
+- task: DotNetCoreCLI@2
+  displayName: dotnet build
+  inputs:
+    command: build
+
+- task: DotNetCoreCLI@2
+  displayName: dotnet test
+  inputs:
+    command: test
+    projects: 'test/**/*.csproj'
+
+- task: DotNetCoreCLI@2
+  displayName: dotnet pack
+  inputs:
+    command: pack
+    packDirectory: '$(Build.ArtifactStagingDirectory)/packages'
+
+- task: PublishBuildArtifacts@1
+  displayName: publish artifacts
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+
+- task: DotNetCoreCLI@2
+  displayName: dotnet nuget push
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+  inputs:
+    command: custom
+    custom: nuget
+    arguments: push $(Build.ArtifactStagingDirectory)\packages\*.nupkg --source https://api.nuget.org/v3/index.json --no-service-endpoint --api-key $(nuget-apikey)
