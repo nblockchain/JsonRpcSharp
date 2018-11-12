@@ -18,8 +18,6 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
     [<Literal>]
     let minimumBufferSize = 512
 
-    let IfNotNull f x = x |> Option.ofNullable |> Option.iter f
-
     let GetArrayFromReadOnlyMemory memory: ArraySegment<byte> =
         match MemoryMarshal.TryGetArray memory with
         | true, segment -> segment
@@ -42,24 +40,31 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         |> System.Buffers.BuffersExtensions.ToArray
         |> System.Text.Encoding.ASCII.GetString
 
-    let rec ReadPipeInternal (reader: PipeReader) (stringBuilder: StringBuilder) (cancellationTokenOption:Option<CancellationToken>) = async {
+    let rec ReadPipeInternal (reader: PipeReader)
+                             (stringBuilder: StringBuilder)
+                             (cancellationTokenOption: Option<CancellationToken>) = async {
         let processLine (line:ReadOnlySequence<byte>) =
             line |> GetAsciiString |> stringBuilder.AppendLine |> ignore
 
-        let! result =
-            match cancellationTokenOption with
-            | Some ct -> async { return! reader.ReadAsync(ct).AsTask() |> Async.AwaitTask }
-            | None    -> async { return! reader.ReadAsync().AsTask()   |> Async.AwaitTask }
-
         let rec keepAdvancingPosition buffer =
             // How to call a ref extension method using extension syntax?
-            System.Buffers.BuffersExtensions.PositionOf(ref buffer, byte '\n')
-            |> IfNotNull(fun pos ->
+            let maybePosition = System.Buffers.BuffersExtensions.PositionOf(ref buffer, byte '\n')
+                                |> Option.ofNullable
+            match maybePosition with
+            | None ->
+                ()
+            | Some pos ->
                 buffer.Slice(0, pos)
                 |> processLine
-                buffer.GetPosition(1L, pos)
-                |> buffer.Slice
-                |> keepAdvancingPosition)
+                let nextBuffer = buffer.GetPosition(1L, pos)
+                                 |> buffer.Slice
+                keepAdvancingPosition nextBuffer
+
+        let! result =
+            match cancellationTokenOption with
+            | None    -> async { return! reader.ReadAsync().AsTask()    |> Async.AwaitTask }
+            | Some ct -> async { return! (reader.ReadAsync ct).AsTask() |> Async.AwaitTask }
+
         keepAdvancingPosition result.Buffer
         reader.AdvanceTo(result.Buffer.Start, result.Buffer.End)
         if not result.IsCompleted then
