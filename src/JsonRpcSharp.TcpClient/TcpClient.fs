@@ -46,13 +46,13 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         let processLine (line:ReadOnlySequence<byte>) =
             line |> GetAsciiString |> stringBuilder.AppendLine |> ignore
 
-        let rec keepAdvancingPosition buffer =
+        let rec keepAdvancingPosition (buffer: ReadOnlySequence<byte>): ReadOnlySequence<byte> =
             // How to call a ref extension method using extension syntax?
             let maybePosition = System.Buffers.BuffersExtensions.PositionOf(ref buffer, byte '\n')
                                 |> Option.ofNullable
             match maybePosition with
             | None ->
-                ()
+                buffer
             | Some pos ->
                 buffer.Slice(0, pos)
                 |> processLine
@@ -65,8 +65,8 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
             | None    -> async { return! reader.ReadAsync().AsTask()    |> Async.AwaitTask }
             | Some ct -> async { return! (reader.ReadAsync ct).AsTask() |> Async.AwaitTask }
 
-        keepAdvancingPosition result.Buffer
-        reader.AdvanceTo(result.Buffer.Start, result.Buffer.End)
+        let lastBuffer = keepAdvancingPosition result.Buffer
+        reader.AdvanceTo(lastBuffer.Start, lastBuffer.End)
         if not result.IsCompleted then
             return! ReadPipeInternal reader stringBuilder cancellationTokenOption
         else
