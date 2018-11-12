@@ -9,15 +9,7 @@ open System.Net.Sockets
 open System.Runtime.InteropServices
 open System.Threading
 
-type ConnectionUnsuccessfulException =
-    inherit Exception
-
-    new(message: string, innerException: Exception) = { inherit Exception(message, innerException) }
-    new(message: string) = { inherit Exception(message) }
-    new() = { inherit Exception() }
-
-type NoResponseReceivedAfterRequestException() =
-   inherit ConnectionUnsuccessfulException()
+exception NoResponseReceivedAfterRequestException
 
 // Translation of https://github.com/davidfowl/TcpEcho/blob/master/src/Program.cs
 // TODO: CONVERT THIS TO BE A CLASS THAT INHERITS FROM ClientBase CLASS
@@ -88,9 +80,9 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         if bytesReceived > 0 then
             writer.Advance bytesReceived
         else
-            raise <| NoResponseReceivedAfterRequestException()                                        
+            raise NoResponseReceivedAfterRequestException
         writer.Complete()
-    } 
+    }
 
     let Connect () = async {
         let! host = resolveHostAsync()
