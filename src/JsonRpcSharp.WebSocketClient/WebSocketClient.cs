@@ -15,7 +15,7 @@ namespace JsonRpcSharp.WebSocketClient
     {
         private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
         protected readonly string Path;
-        public static int ForceCompleteReadTotalMilliseconds { get; set; } = 2000;
+        public static TimeSpan ForceCompleteReadTimeout { get; set; } = TimeSpan.FromMilliseconds(2000);
 
         private WebSocketClient(string path, JsonSerializerSettings jsonSerializerSettings = null)
         {
@@ -37,14 +37,14 @@ namespace JsonRpcSharp.WebSocketClient
             _log = log;
         }
 
-        private async Task<ClientWebSocket> GetClientWebSocketAsync()
+        private async Task<ClientWebSocket> GetClientWebSocketAsync(CancellationToken cancellationToken)
         {
             try
             {
                 if (_clientWebSocket == null || _clientWebSocket.State != WebSocketState.Open)
                 {
                     _clientWebSocket = new ClientWebSocket();
-                    await _clientWebSocket.ConnectAsync(new Uri(Path), new CancellationTokenSource(ConnectionTimeout).Token).ConfigureAwait(false);
+                    await _clientWebSocket.ConnectAsync(new Uri(Path), cancellationToken).ConfigureAwait(false);
 
                 }
             }
@@ -62,13 +62,14 @@ namespace JsonRpcSharp.WebSocketClient
         }
 
 
-        public async Task<int> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer)
+        public async Task<int> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer, CancellationToken? cancellationToken)
         {
             try
             {
+                var effectiveCancellationToken = GetEffectiveCancellationToken(cancellationToken, ForceCompleteReadTimeout);
                 var segmentBuffer = new ArraySegment<byte>(buffer);
                 var result = await client
-                    .ReceiveAsync(segmentBuffer, new CancellationTokenSource(ForceCompleteReadTotalMilliseconds).Token)
+                    .ReceiveAsync(segmentBuffer, effectiveCancellationToken)
                     .ConfigureAwait(false);
                 return result.Count;
             }
@@ -78,14 +79,14 @@ namespace JsonRpcSharp.WebSocketClient
             }
         }
 
-        public async Task<MemoryStream> ReceiveFullResponseAsync(ClientWebSocket client)
+        public async Task<MemoryStream> ReceiveFullResponseAsync(ClientWebSocket client, CancellationToken? cancellationToken)
         {
             var readBufferSize = 512;
             var memoryStream = new MemoryStream();
 
             int bytesRead = 0;
             byte[] buffer = new byte[readBufferSize];
-            bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+            bytesRead = await ReceiveBufferedResponseAsync(client, buffer, cancellationToken).ConfigureAwait(false);
             while (bytesRead > 0)
             {
                 memoryStream.Write(buffer, 0, bytesRead);
@@ -97,29 +98,28 @@ namespace JsonRpcSharp.WebSocketClient
                 }
                 else
                 {
-                    bytesRead = await ReceiveBufferedResponseAsync(client, buffer).ConfigureAwait(false);
+                    bytesRead = await ReceiveBufferedResponseAsync(client, buffer, cancellationToken).ConfigureAwait(false);
                 }
             }
             return memoryStream;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null, CancellationToken? cancellationToken = null)
         {
             var logger = new RpcLogger(_log);
             try
             {
-                await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                var effectiveCancellationToken = GetEffectiveCancellationToken(cancellationToken, ConnectionTimeout);
+                await semaphoreSlim.WaitAsync(effectiveCancellationToken).ConfigureAwait(false);
                 var rpcRequestJson = JsonConvert.SerializeObject(request, JsonSerializerSettings);
                 var requestBytes = new ArraySegment<byte>(Encoding.UTF8.GetBytes(rpcRequestJson));
                 logger.LogRequest(rpcRequestJson);
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
 
-                var webSocket = await GetClientWebSocketAsync().ConfigureAwait(false);
-                await webSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, cancellationTokenSource.Token)
+                var webSocket = await GetClientWebSocketAsync(effectiveCancellationToken).ConfigureAwait(false);
+                await webSocket.SendAsync(requestBytes, WebSocketMessageType.Text, true, effectiveCancellationToken)
                     .ConfigureAwait(false);
 
-                using (var memoryData = await ReceiveFullResponseAsync(webSocket).ConfigureAwait(false))
+                using (var memoryData = await ReceiveFullResponseAsync(webSocket, cancellationToken).ConfigureAwait(false))
                 {
                     memoryData.Position = 0;
                     using (var streamReader = new StreamReader(memoryData))

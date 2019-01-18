@@ -7,19 +7,9 @@ open System.IO.Pipelines
 open System.Net
 open System.Net.Sockets
 open System.Runtime.InteropServices
+open System.Threading
 
-type ConnectionUnsuccessfulException =
-    inherit Exception
-
-    new(message: string, innerException: Exception) = { inherit Exception(message, innerException) }
-    new(message: string) = { inherit Exception(message) }
-    new() = { inherit Exception() }
-
-type NoResponseReceivedAfterRequestException() =
-   inherit ConnectionUnsuccessfulException()
-
-type ServerUnresponsiveException() =
-   inherit ConnectionUnsuccessfulException()
+exception NoResponseReceivedAfterRequestException
 
 // Translation of https://github.com/davidfowl/TcpEcho/blob/master/src/Program.cs
 // TODO: CONVERT THIS TO BE A CLASS THAT INHERITS FROM ClientBase CLASS
@@ -27,8 +17,6 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
 
     [<Literal>]
     let minimumBufferSize = 512
-
-    let IfNotNull f x = x |> Option.ofNullable |> Option.iter f
 
     let GetArrayFromReadOnlyMemory memory: ArraySegment<byte> =
         match MemoryMarshal.TryGetArray memory with
@@ -52,25 +40,35 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         |> System.Buffers.BuffersExtensions.ToArray
         |> System.Text.Encoding.ASCII.GetString
 
-    let rec ReadPipeInternal (reader: PipeReader) (stringBuilder: StringBuilder) = async {
+    let rec ReadPipeInternal (reader: PipeReader)
+                             (stringBuilder: StringBuilder)
+                             (cancellationTokenOption: Option<CancellationToken>) = async {
         let processLine (line:ReadOnlySequence<byte>) =
             line |> GetAsciiString |> stringBuilder.AppendLine |> ignore
 
-        let! result = reader.ReadAsync().AsTask() |> Async.AwaitTask
-
-        let rec keepAdvancingPosition buffer =
+        let rec keepAdvancingPosition (buffer: ReadOnlySequence<byte>): ReadOnlySequence<byte> =
             // How to call a ref extension method using extension syntax?
-            System.Buffers.BuffersExtensions.PositionOf(ref buffer, byte '\n')
-            |> IfNotNull(fun pos ->
+            let maybePosition = System.Buffers.BuffersExtensions.PositionOf(ref buffer, byte '\n')
+                                |> Option.ofNullable
+            match maybePosition with
+            | None ->
+                buffer
+            | Some pos ->
                 buffer.Slice(0, pos)
                 |> processLine
-                buffer.GetPosition(1L, pos)
-                |> buffer.Slice
-                |> keepAdvancingPosition)
-        keepAdvancingPosition result.Buffer
-        reader.AdvanceTo(result.Buffer.Start, result.Buffer.End)
+                let nextBuffer = buffer.GetPosition(1L, pos)
+                                 |> buffer.Slice
+                keepAdvancingPosition nextBuffer
+
+        let! result =
+            match cancellationTokenOption with
+            | None    -> async { return! reader.ReadAsync().AsTask()    |> Async.AwaitTask }
+            | Some ct -> async { return! (reader.ReadAsync ct).AsTask() |> Async.AwaitTask }
+
+        let lastBuffer = keepAdvancingPosition result.Buffer
+        reader.AdvanceTo(lastBuffer.Start, lastBuffer.End)
         if not result.IsCompleted then
-            return! ReadPipeInternal reader stringBuilder
+            return! ReadPipeInternal reader stringBuilder cancellationTokenOption
         else
             return stringBuilder.ToString()
     }
@@ -87,9 +85,9 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         if bytesReceived > 0 then
             writer.Advance bytesReceived
         else
-            raise <| NoResponseReceivedAfterRequestException()                                        
+            raise NoResponseReceivedAfterRequestException
         writer.Complete()
-    } 
+    }
 
     let Connect () = async {
         let! host = resolveHostAsync()
@@ -106,7 +104,7 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
 
     new(host: IPAddress, port: int) = new TcpClient((fun _ -> async { return host }), port)
 
-    member __.Request (request: string): Async<string> = async {
+    member __.Request (request: string) (cancellationTokenOption:Option<CancellationToken>): Async<string> = async {
         use! socket = Connect()
         let buffer =
             request + "\n"
@@ -116,6 +114,6 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         let! bytesReceived = socket.SendAsync(buffer, SocketFlags.None) |> Async.AwaitTask
         let pipe = Pipe()
         do! FillPipeAsync socket pipe.Writer
-        let! str = ReadPipe pipe.Reader
+        let! str = ReadPipe pipe.Reader cancellationTokenOption
         return str
     }

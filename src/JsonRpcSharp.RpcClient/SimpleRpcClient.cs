@@ -24,17 +24,15 @@ namespace JsonRpcSharp.Client
             _httpClient.BaseAddress = baseUrl;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null, CancellationToken? cancellationToken = null)
         {
             try
             {
                 var rpcRequestJson = JsonConvert.SerializeObject(request, _jsonSerializerSettings);
                 var httpContent = new StringContent(rpcRequestJson, Encoding.UTF8, "application/json");
 
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
-
-                var httpResponseMessage = await _httpClient.PostAsync(route, httpContent, cancellationTokenSource.Token)
+                var effectiveToken = GetEffectiveCancellationToken(cancellationToken, ConnectionTimeout);
+                var httpResponseMessage = await _httpClient.PostAsync(route, httpContent, effectiveToken)
                     .ConfigureAwait(false);
                 httpResponseMessage.EnsureSuccessStatusCode();
 

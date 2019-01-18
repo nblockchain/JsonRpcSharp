@@ -1,5 +1,6 @@
 #if !DOTNET35
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using JsonRpcSharp.Client.RpcMessages;
 
@@ -78,13 +79,27 @@ namespace JsonRpcSharp.Client
             HandleRpcError(response);
         }
 
-        protected abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null);
+        protected abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null, CancellationToken? cancellationToken = null);
 
         public virtual async Task SendRequestAsync(string method, string route = null, params object[] paramList)
         {
             var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);
             var response = await SendAsync(request, route).ConfigureAwait(false);
             HandleRpcError(response);
+        }
+
+        protected CancellationToken GetEffectiveCancellationToken(CancellationToken? providedToken, TimeSpan timeout)
+        {
+            if (providedToken == null)
+            {
+                var cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.CancelAfter(timeout);
+                return cancellationTokenSource.Token;
+            }
+            else
+            {
+                return providedToken.Value;
+            }
         }
     }
 }
