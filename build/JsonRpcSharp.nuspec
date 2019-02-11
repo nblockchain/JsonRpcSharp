@@ -19,18 +19,6 @@
         <summary>JsonRpcSharp</summary>
         <tags>JsonRpcSharp</tags>
         <dependencies>
-        <group targetFramework="net1.1">
-        </group>
-        <group targetFramework="net3.5">
-            <dependency id="TaskParallelLibrary" version="1.0.2856" exclude="Build,Analyzers" />
-            <dependency id="BouncyCastle" version="1.8.1" exclude="Build,Analyzers" />
-            <dependency id="Newtonsoft.Json" version="6.0.1" exclude="Build,Analyzers" />
-         </group>
-        <group targetFramework="net4.5.1">
-            <dependency id="Common.Logging.Core" version="3.4.1" exclude="Build,Analyzers" />
-            <dependency id="Newtonsoft.Json" version="10.0.3" exclude="Build,Analyzers" />
-            <dependency id="System.Net.Http"  version="4.0.0" exclude="Build,Analyzers" />
-         </group>
         <group targetFramework="net4.6.1">
             <dependency id="System.IO.Pipes" version="4.3.0" exclude="Build,Analyzers" />
             <dependency id="System.Net.Http" version="4.0.0" exclude="Build,Analyzers" />
@@ -55,16 +43,6 @@
        </dependencies>
     </metadata>
     <files> 
-        <!--Net 1.1-->
-        <!--<file src="..\src\JsonRpcSharp.Client\bin\Release\net11\JsonRpcSharp.Client.*" target="lib\net11" />-->
-
-        <!--Net 3.5-->
-        <file src="..\src\JsonRpcSharp.Client\bin\Release\net35\JsonRpcSharp.*" target="lib\net35" />
-
-        <!--Net 4.5.1-->
-        <file src="..\src\JsonRpcSharp.Client\bin\Release\net451\JsonRpcSharp.*" target="lib\net451" />
-        <file src="..\src\JsonRpcSharp.RpcClient\bin\Release\net451\JsonRpcSharp.*" target="lib\net451" />
-
         <!--Net 4.6.1-->
         <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\net461\JsonRpcSharp.*" target="lib\net461" />
         <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\net461\JsonRpcSharp.*" target="lib\net461" />
