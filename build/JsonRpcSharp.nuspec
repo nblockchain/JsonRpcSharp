@@ -19,7 +19,7 @@
         <summary>JsonRpcSharp</summary>
         <tags>JsonRpcSharp</tags>
         <dependencies>
-            <group targetFramework="net4.6.1">
+            <group targetFramework="net4.6">
                 <dependency id="System.IO.Pipes" version="4.3.0" exclude="Build,Analyzers" />
                 <dependency id="System.Net.Http" version="4.0.0" exclude="Build,Analyzers" />
                 <dependency id="System.Net.WebSockets.Client" version="4.3.2" exclude="Build,Analyzers" />
@@ -30,11 +30,21 @@
         </dependencies>
     </metadata>
     <files> 
-        <!--Net 4.6.1-->
-        <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\net461\JsonRpcSharp.*" target="lib\net461" />
-        <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\net461\JsonRpcSharp.*" target="lib\net461" />
+        <!--Net 4.6-->
+        <file src="..\src\JsonRpcSharp.Client\bin\Release\net451\JsonRpcSharp.*" target="lib\net46" />
+        <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\net461\JsonRpcSharp.*" target="lib\net46" />
+        <file src="..\src\JsonRpcSharp.RpcClient\bin\Release\net451\JsonRpcSharp.*" target="lib\net46" />
+        <file src="..\src\JsonRpcSharp.TcpClient\bin\Release\netstandard2.0\JsonRpcSharp.*" target="lib\net46" />
+        <file src="..\src\JsonRpcSharp.UnixIpcClient\bin\Release\netstandard1.3\JsonRpcSharp.*" target="lib\net46" />
+        <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\net461\JsonRpcSharp.*" target="lib\net46" />
 
         <!--netstandard2.0-->
+        <file src="..\src\JsonRpcSharp.Client\bin\Release\netstandard1.1\JsonRpcSharp.*" target="lib\netstandard2.0" />
+        <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\netstandard1.3\JsonRpcSharp.*" target="lib\netstandard2.0" />
+        <file src="..\src\JsonRpcSharp.RpcClient\bin\Release\netstandard1.1\JsonRpcSharp.*" target="lib\netstandard2.0" />
         <file src="..\src\JsonRpcSharp.TcpClient\bin\Release\netstandard2.0\JsonRpcSharp.*" target="lib\netstandard2.0" />
+        <file src="..\src\JsonRpcSharp.UnixIpcClient\bin\Release\netstandard1.3\JsonRpcSharp.*" target="lib\netstandard2.0" />
+        <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\netstandard1.3\JsonRpcSharp.*" target="lib\netstandard2.0" />
+
     </files>
 </package>
