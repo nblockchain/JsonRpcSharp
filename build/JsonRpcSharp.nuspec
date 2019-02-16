@@ -14,7 +14,7 @@
             JsonRpcSharp
         </description>
         <releaseNotes>
-            See: https://github.com/nblockchain/JsonRpcSharp/blob/master/CHANGELOG.md
+            See: https://github.com/nblockchain/JsonRpcSharp/commits/master
         </releaseNotes>
         <summary>JsonRpcSharp</summary>
         <tags>JsonRpcSharp</tags>
@@ -30,6 +30,8 @@
         </dependencies>
     </metadata>
     <files> 
+        <!-- TODO: rename RpcClient to HttpClient -->
+
         <!--Net 4.6.1-->
         <file src="..\src\JsonRpcSharp.Client\bin\Release\net461\JsonRpcSharp.Client.dll" target="lib\net461" />
         <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\net461\JsonRpcSharp.IpcClient.dll" target="lib\net461" />
