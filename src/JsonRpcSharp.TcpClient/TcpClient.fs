@@ -9,6 +9,11 @@ open System.Net.Sockets
 open System.Runtime.InteropServices
 open System.Threading
 
+#if !NETSTANDARD2_0
+//to get extension methods from SocketTasksExtensions
+open JsonRpcSharp.Client
+#endif
+
 exception NoResponseReceivedAfterRequestException
 
 // Translation of https://github.com/davidfowl/TcpEcho/blob/master/src/Program.cs

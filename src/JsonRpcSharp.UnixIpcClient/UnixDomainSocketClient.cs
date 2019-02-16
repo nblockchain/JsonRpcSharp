@@ -211,18 +211,4 @@ namespace JsonRpcSharp.UnixIpcClient
         }
         #endregion
     }
-
-    /// <summary>
-    /// Missing from net461
-    /// https://github.com/dotnet/corefx/blob/master/src/System.Net.Sockets/src/System/Net/Sockets/SocketTaskExtensions.cs
-    /// </summary>
-    public static class SocketTaskExtensions
-    {
-        public static Task ConnectAsync(this Socket socket, EndPoint remoteEP) =>
-            socket.ConnectAsync(remoteEP);
-        public static Task<int> SendAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
-           socket.SendAsync(buffer, socketFlags);
-        public static Task<int> ReceiveAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
-           socket.ReceiveAsync(buffer, socketFlags);
-    }
 }

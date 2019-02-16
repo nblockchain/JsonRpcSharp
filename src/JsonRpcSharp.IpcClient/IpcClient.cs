@@ -132,9 +132,7 @@ namespace JsonRpcSharp.IpcClient
                 if (disposing)
                     if (_pipeClient != null)
                     {
-#if NET462
                         _pipeClient.Close();
-#endif
                         _pipeClient.Dispose();
                     }
 

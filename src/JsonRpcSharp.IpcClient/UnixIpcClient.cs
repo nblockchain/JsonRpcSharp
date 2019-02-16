@@ -48,19 +48,6 @@ namespace JsonRpcSharp.IpcClient
 
         public int ReceiveBufferedResponse(Socket client, byte[] buffer)
         {
-#if NET461
-            int bytesRead = 0;
-            if (Task.Run(() => 
-                    bytesRead = client.Receive(buffer, SocketFlags.None)
-                ).Wait(ForceCompleteReadTotalMiliseconds))
-            {
-                return bytesRead;
-            }
-            else
-            {
-                return bytesRead;
-            }
-#else
              int bytesRead = 0;
             if (Task.Run(async () => 
                     bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)
@@ -72,7 +59,6 @@ namespace JsonRpcSharp.IpcClient
             {
                 return bytesRead;
             }
-#endif
         }
 
         public MemoryStream ReceiveFullResponse(Socket client)
@@ -112,11 +98,7 @@ namespace JsonRpcSharp.IpcClient
                     logger.LogRequest(rpcRequestJson);
                     var client = GetSocket();
                     client.SendBufferSize = requestBytes.Length;
-#if NET461
-                    var val = client.Send(requestBytes, SocketFlags.None);
-#else
                     var val = client.SendAsync(new ArraySegment<byte>(requestBytes, 0, requestBytes.Length), SocketFlags.None).Result;
-#endif
                     using (var memoryStream = ReceiveFullResponse(client))
                     {
                         memoryStream.Position = 0;

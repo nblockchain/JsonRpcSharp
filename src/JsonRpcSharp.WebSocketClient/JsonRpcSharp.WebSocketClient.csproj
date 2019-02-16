@@ -4,7 +4,7 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>JsonRpcSharp.WebSocketClient</AssemblyTitle>
     <VersionPrefix>$(JsonRpcSharpVersion)</VersionPrefix>
-    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
     <AssemblyName>JsonRpcSharp.WebSocketClient</AssemblyName>
     <PackageId>JsonRpcSharp.WebSocketClient</PackageId>
     <PackageTags>Json;RPC</PackageTags>
