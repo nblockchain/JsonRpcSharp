@@ -1,10 +1,9 @@
-﻿using System;
-using System.Net;
-using System.Net.Sockets;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 #if !NETSTANDARD2_0
-namespace JsonRpcSharp.Client
+namespace System.Net.Sockets
 {
     /// <summary>
     /// Missing from net46/net461
