@@ -18,6 +18,9 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
     [<Literal>]
     let minimumBufferSize = 2048
 
+    let IsCancelled (maybeCancellationToken: Option<CancellationToken>) =
+        Option.exists (fun (ct: CancellationToken) -> ct.IsCancellationRequested) maybeCancellationToken
+
     let GetArrayFromReadOnlyMemory memory: ArraySegment<byte> =
         match MemoryMarshal.TryGetArray memory with
         | true, segment -> segment
@@ -59,11 +62,23 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
             | None ->
                 buffer
             | Some pos ->
-                buffer.Slice(0, pos)
-                |> processLine
-                let nextBuffer = buffer.GetPosition(1L, pos)
-                                 |> buffer.Slice
-                keepAdvancingPosition nextBuffer
+                if IsCancelled cancellationTokenOption then
+                    buffer
+                else
+                    let subBuffer = buffer.Slice(0, pos)
+                    if IsCancelled cancellationTokenOption then
+                        subBuffer
+                    else
+                        processLine subBuffer
+                        if IsCancelled cancellationTokenOption then
+                            subBuffer
+                        else
+                            let nextBuffer = buffer.GetPosition(1L, pos)
+                                             |> buffer.Slice
+                            if IsCancelled cancellationTokenOption then
+                                nextBuffer
+                            else
+                                keepAdvancingPosition nextBuffer
 
         let! result =
             match cancellationTokenOption with
@@ -71,12 +86,17 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
             | Some ct -> async { return! (reader.ReadAsync ct).AsTask() |> Async.AwaitTask }
 
         let lastBuffer = keepAdvancingPosition result.Buffer
-        reader.AdvanceTo(lastBuffer.Start, lastBuffer.End)
-        if not result.IsCompleted then
-            return! ReadPipeInternal reader stringBuilder cancellationTokenOption
+        if IsCancelled cancellationTokenOption then
+            return String.Empty
         else
-            reader.Complete()
-            return stringBuilder.ToString()
+            reader.AdvanceTo(lastBuffer.Start, lastBuffer.End)
+            if IsCancelled cancellationTokenOption then
+                return String.Empty
+            elif not result.IsCompleted then
+                return! ReadPipeInternal reader stringBuilder cancellationTokenOption
+            else
+                reader.Complete()
+                return stringBuilder.ToString()
     }
 
     let ReadFromPipe pipeReader (cancellationTokenOption: Option<CancellationToken>) = async {
@@ -84,17 +104,21 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
         return result
     }
 
-    let WriteIntoPipe (socket: Socket) (writer: PipeWriter) = async {
+    let WriteIntoPipe (socket: Socket) (writer: PipeWriter) (cancellationTokenOption:Option<CancellationToken>) = async {
         let rec WritePipeInternal() = async {
             let! bytesReceived = ReceiveAsync socket (writer.GetMemory minimumBufferSize) SocketFlags.None
             if bytesReceived > 0 then
                 writer.Advance bytesReceived
                 let! result = (writer.FlushAsync().AsTask() |> Async.AwaitTask)
+                let! result =
+                    match cancellationTokenOption with
+                    | None    -> (writer.FlushAsync ()).AsTask() |> Async.AwaitTask
+                    | Some ct -> (writer.FlushAsync ct).AsTask() |> Async.AwaitTask
                 let dataAvailableInSocket = socket.Available
-                if  dataAvailableInSocket > 0 && not result.IsCompleted then
-                    return! WritePipeInternal()
-                else
+                if IsCancelled cancellationTokenOption || not (dataAvailableInSocket > 0 && not result.IsCompleted) then
                     return String.Empty
+                else
+                    return! WritePipeInternal()
             else
                 return raise NoResponseReceivedAfterRequestException
         }
@@ -126,24 +150,30 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
             |> ArraySegment<byte>
 
         let! _ = socket.SendAsync(buffer, SocketFlags.None) |> Async.AwaitTask
-        let pipe = Pipe()
-        let writerJob = WriteIntoPipe socket pipe.Writer
-        let readerJob = ReadFromPipe pipe.Reader cancellationTokenOption
-        let bothJobs = Async.Parallel [writerJob;readerJob]
+        if IsCancelled cancellationTokenOption then
+            return String.Empty
+        else
+            let pipe = Pipe()
+            let writerJob = WriteIntoPipe socket pipe.Writer cancellationTokenOption
+            let readerJob = ReadFromPipe pipe.Reader cancellationTokenOption
+            let bothJobs = Async.Parallel [writerJob;readerJob]
 
-        let! writerAndReaderResults = bothJobs
-        let writerResult =  writerAndReaderResults
-                            |> Seq.head
-        let readerResult =  writerAndReaderResults
-                            |> Seq.last
+            let! writerAndReaderResults = bothJobs
+            if IsCancelled cancellationTokenOption then
+                return String.Empty
+            else
+                let writerResult =  writerAndReaderResults
+                                    |> Seq.head
+                let readerResult =  writerAndReaderResults
+                                    |> Seq.last
 
-        return match writerResult with
-               | Choice1Of2 _ ->
-                   match readerResult with
-                   // reading result
-                   | Choice1Of2 str -> str
-                   // possible reader pipe exception
-                   | Choice2Of2 ex -> raise ex
-               // possible socket reading exception
-               | Choice2Of2 ex -> raise ex
+                return match writerResult with
+                       | Choice1Of2 _ ->
+                           match readerResult with
+                           // reading result
+                           | Choice1Of2 str -> str
+                           // possible reader pipe exception
+                           | Choice2Of2 ex -> raise ex
+                       // possible socket reading exception
+                       | Choice2Of2 ex -> raise ex
     }
