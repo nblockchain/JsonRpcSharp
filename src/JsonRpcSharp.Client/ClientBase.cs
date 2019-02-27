@@ -13,24 +13,35 @@ namespace JsonRpcSharp.Client
 
         public RequestInterceptor OverridingRequestInterceptor { get; set; }
 
-        public async Task<T> SendRequestAsync<T>(RpcRequest request, string route = null)
+        public async Task<T> SendRequestAsync<T>(RpcRequest request,
+                                                 string route = null,
+                                                 CancellationToken cancellationToken = default(CancellationToken))
         {
             if (OverridingRequestInterceptor != null)
                 return
                     (T)
-                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAsync<T>, request, route)
+                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAsync<T>,
+                                                                                 request,
+                                                                                 route,
+                                                                                 cancellationToken)
                         .ConfigureAwait(false);
-            return await SendInnerRequestAsync<T>(request, route).ConfigureAwait(false);
+            return await SendInnerRequestAsync<T>(request, route, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<T> SendRequestAsync<T>(string method, string route = null, params object[] paramList)
+        public async Task<T> SendRequestAsync<T>(string method,
+                                                 string route = null,
+                                                 CancellationToken cancellationToken = default(CancellationToken),
+                                                 params object[] paramList)
         {
             if (OverridingRequestInterceptor != null)
                 return
                     (T)
-                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAsync<T>, method, route,
+                    await OverridingRequestInterceptor.InterceptSendRequestAsync(SendInnerRequestAsync<T>,
+                                                                                 method,
+                                                                                 route,
+                                                                                 cancellationToken,
                         paramList).ConfigureAwait(false);
-            return await SendInnerRequestAsync<T>(method, route, paramList).ConfigureAwait(false);
+            return await SendInnerRequestAsync<T>(method, route, cancellationToken, paramList).ConfigureAwait(false);
         }
 
         protected void HandleRpcError(RpcResponseMessage response)
@@ -41,9 +52,10 @@ namespace JsonRpcSharp.Client
         }
 
         private async Task<T> SendInnerRequestAsync<T>(RpcRequestMessage reqMsg,
-                                                       string route = null)
+                                                       string route = null,
+                                                       CancellationToken cancellationToken = default(CancellationToken))
         {
-            var response = await SendAsync(reqMsg, route).ConfigureAwait(false);
+            var response = await SendAsync(reqMsg, route, cancellationToken).ConfigureAwait(false);
             HandleRpcError(response);
             try
             {
@@ -55,26 +67,32 @@ namespace JsonRpcSharp.Client
             }
         }
 
-        protected virtual async Task<T> SendInnerRequestAsync<T>(RpcRequest request, string route = null)
+        protected virtual async Task<T> SendInnerRequestAsync<T>(RpcRequest request,
+                                                                 string route = null,
+                                                                 CancellationToken cancellationToken = default(CancellationToken))
         {
             var reqMsg = new RpcRequestMessage(request.Id,
                                                request.Method,
                                                request.RawParameters);
-            return await SendInnerRequestAsync<T>(reqMsg, route).ConfigureAwait(false);
+            return await SendInnerRequestAsync<T>(reqMsg, route, cancellationToken).ConfigureAwait(false);
         }
 
-        protected virtual async Task<T> SendInnerRequestAsync<T>(string method, string route = null,
-            params object[] paramList)
+        protected virtual async Task<T> SendInnerRequestAsync<T>(string method,
+                                                                 string route = null,
+                                                                 CancellationToken cancellationToken = default(CancellationToken),
+                                                                 params object[] paramList)
         {
             var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);
-            return await SendInnerRequestAsync<T>(request, route);
+            return await SendInnerRequestAsync<T>(request, route, cancellationToken);
         }
 
-        public virtual async Task SendRequestAsync(RpcRequest request, string route = null)
+        public virtual async Task SendRequestAsync(RpcRequest request,
+                                                   string route = null,
+                                                   CancellationToken cancellationToken = default(CancellationToken))
         {
             var response =
                 await SendAsync(
-                        new RpcRequestMessage(request.Id, request.Method, request.RawParameters), route)
+                        new RpcRequestMessage(request.Id, request.Method, request.RawParameters), route, cancellationToken)
                     .ConfigureAwait(false);
             HandleRpcError(response);
         }
@@ -83,10 +101,13 @@ namespace JsonRpcSharp.Client
                                                               string route = null,
                                                               CancellationToken cancellationToken = default(CancellationToken));
 
-        public virtual async Task SendRequestAsync(string method, string route = null, params object[] paramList)
+        public virtual async Task SendRequestAsync(string method,
+                                                   string route = null,
+                                                   CancellationToken cancellationToken = default(CancellationToken),
+                                                   params object[] paramList)
         {
             var request = new RpcRequestMessage(Guid.NewGuid().ToString(), method, paramList);
-            var response = await SendAsync(request, route).ConfigureAwait(false);
+            var response = await SendAsync(request, route, cancellationToken).ConfigureAwait(false);
             HandleRpcError(response);
         }
 

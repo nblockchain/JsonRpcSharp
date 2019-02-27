@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace JsonRpcSharp.Client
@@ -14,10 +15,12 @@ namespace JsonRpcSharp.Client
 
         public IClient Client { get; }
 
-        protected Task<TResponse> SendRequestAsync(object id, params object[] paramList)
+        protected Task<TResponse> SendRequestAsync(object id,
+                                                   CancellationToken cancellationToken = default(CancellationToken),
+                                                   params object[] paramList)
         {
             var request = BuildRequest(id, paramList);
-            return Client.SendRequestAsync<TResponse>(request);
+            return Client.SendRequestAsync<TResponse>(request, null, cancellationToken);
         }
 
         public RpcRequest BuildRequest(object id, params object[] paramList)
