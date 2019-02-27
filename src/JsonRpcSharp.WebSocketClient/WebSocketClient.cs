@@ -62,7 +62,9 @@ namespace JsonRpcSharp.WebSocketClient
         }
 
 
-        public async Task<int> ReceiveBufferedResponseAsync(ClientWebSocket client, byte[] buffer, CancellationToken? cancellationToken)
+        public async Task<int> ReceiveBufferedResponseAsync(ClientWebSocket client,
+                                                            byte[] buffer,
+                                                            CancellationToken cancellationToken)
         {
             try
             {
@@ -79,7 +81,7 @@ namespace JsonRpcSharp.WebSocketClient
             }
         }
 
-        public async Task<MemoryStream> ReceiveFullResponseAsync(ClientWebSocket client, CancellationToken? cancellationToken)
+        public async Task<MemoryStream> ReceiveFullResponseAsync(ClientWebSocket client, CancellationToken cancellationToken)
         {
             var readBufferSize = 512;
             var memoryStream = new MemoryStream();
@@ -104,7 +106,9 @@ namespace JsonRpcSharp.WebSocketClient
             return memoryStream;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null, CancellationToken? cancellationToken = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request,
+                                                                    string route = null,
+                                                                    CancellationToken cancellationToken = default(CancellationToken))
         {
             var logger = new RpcLogger(_log);
             try

@@ -88,7 +88,9 @@ namespace JsonRpcSharp.IpcClient
             return memoryStream;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null, CancellationToken? cancellationToken = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request,
+                                                                    string route = null,
+                                                                    CancellationToken cancellationToken = default(CancellationToken))
         {
             var logger = new RpcLogger(_log);
             try

@@ -24,7 +24,9 @@ namespace JsonRpcSharp.Client
             _httpClient.BaseAddress = baseUrl;
         }
 
-        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request, string route = null, CancellationToken? cancellationToken = null)
+        protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request,
+                                                                    string route = null,
+                                                                    CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {

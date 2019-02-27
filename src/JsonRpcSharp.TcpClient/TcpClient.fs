@@ -18,9 +18,6 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
     [<Literal>]
     let minimumBufferSize = 2048
 
-    let IsCancelled (maybeCancellationToken: Option<CancellationToken>) =
-        Option.exists (fun (ct: CancellationToken) -> ct.IsCancellationRequested) maybeCancellationToken
-
     let GetArrayFromReadOnlyMemory memory: ArraySegment<byte> =
         match MemoryMarshal.TryGetArray memory with
         | true, segment -> segment
@@ -47,7 +44,7 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
 
     let rec ReadPipeInternal (reader: PipeReader)
                              (stringBuilder: StringBuilder)
-                             (cancellationTokenOption: Option<CancellationToken>) = async {
+                             (cancellationToken: CancellationToken) = async {
         let processLine (line:ReadOnlySequence<byte>) =
             line |> GetAsciiString |> stringBuilder.AppendLine |> ignore
 
@@ -62,60 +59,55 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
             | None ->
                 buffer
             | Some pos ->
-                if IsCancelled cancellationTokenOption then
+                if cancellationToken.IsCancellationRequested then
                     buffer
                 else
                     let subBuffer = buffer.Slice(0, pos)
-                    if IsCancelled cancellationTokenOption then
+                    if cancellationToken.IsCancellationRequested then
                         subBuffer
                     else
                         processLine subBuffer
-                        if IsCancelled cancellationTokenOption then
+                        if cancellationToken.IsCancellationRequested then
                             subBuffer
                         else
                             let nextBuffer = buffer.GetPosition(1L, pos)
                                              |> buffer.Slice
-                            if IsCancelled cancellationTokenOption then
+                            if cancellationToken.IsCancellationRequested then
                                 nextBuffer
                             else
                                 keepAdvancingPosition nextBuffer
 
-        let! result =
-            match cancellationTokenOption with
-            | None    -> async { return! reader.ReadAsync().AsTask()    |> Async.AwaitTask }
-            | Some ct -> async { return! (reader.ReadAsync ct).AsTask() |> Async.AwaitTask }
+        let! result = async { return! (reader.ReadAsync cancellationToken).AsTask() |> Async.AwaitTask }
 
         let lastBuffer = keepAdvancingPosition result.Buffer
-        if IsCancelled cancellationTokenOption then
+        if cancellationToken.IsCancellationRequested then
             return String.Empty
         else
             reader.AdvanceTo(lastBuffer.Start, lastBuffer.End)
-            if IsCancelled cancellationTokenOption then
+            if cancellationToken.IsCancellationRequested then
                 return String.Empty
             elif not result.IsCompleted then
-                return! ReadPipeInternal reader stringBuilder cancellationTokenOption
+                return! ReadPipeInternal reader stringBuilder cancellationToken
             else
                 reader.Complete()
                 return stringBuilder.ToString()
     }
 
-    let ReadFromPipe pipeReader (cancellationTokenOption: Option<CancellationToken>) = async {
-        let! result = Async.Catch (ReadPipeInternal pipeReader (StringBuilder()) cancellationTokenOption)
+    let ReadFromPipe pipeReader (cancellationToken: CancellationToken) = async {
+        let! result = Async.Catch (ReadPipeInternal pipeReader (StringBuilder()) cancellationToken)
         return result
     }
 
-    let WriteIntoPipe (socket: Socket) (writer: PipeWriter) (cancellationTokenOption:Option<CancellationToken>) = async {
+    let WriteIntoPipe (socket: Socket) (writer: PipeWriter) (cancellationToken: CancellationToken) = async {
         let rec WritePipeInternal() = async {
             let! bytesReceived = ReceiveAsync socket (writer.GetMemory minimumBufferSize) SocketFlags.None
             if bytesReceived > 0 then
                 writer.Advance bytesReceived
                 let! result = (writer.FlushAsync().AsTask() |> Async.AwaitTask)
-                let! result =
-                    match cancellationTokenOption with
-                    | None    -> (writer.FlushAsync ()).AsTask() |> Async.AwaitTask
-                    | Some ct -> (writer.FlushAsync ct).AsTask() |> Async.AwaitTask
+                let! result = (writer.FlushAsync cancellationToken).AsTask() |> Async.AwaitTask
                 let dataAvailableInSocket = socket.Available
-                if IsCancelled cancellationTokenOption || not (dataAvailableInSocket > 0 && not result.IsCompleted) then
+                if cancellationToken.IsCancellationRequested ||
+                   not (dataAvailableInSocket > 0 && not result.IsCompleted) then
                     return String.Empty
                 else
                     return! WritePipeInternal()
@@ -142,7 +134,7 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
 
     new(host: IPAddress, port: int) = new TcpClient((fun _ -> async { return host }), port)
 
-    member __.Request (request: string) (cancellationTokenOption:Option<CancellationToken>): Async<string> = async {
+    member __.Request (request: string) (cancellationToken: CancellationToken): Async<string> = async {
         use! socket = Connect()
         let buffer =
             request + "\n"
@@ -150,16 +142,16 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
             |> ArraySegment<byte>
 
         let! _ = socket.SendAsync(buffer, SocketFlags.None) |> Async.AwaitTask
-        if IsCancelled cancellationTokenOption then
+        if cancellationToken.IsCancellationRequested then
             return String.Empty
         else
             let pipe = Pipe()
-            let writerJob = WriteIntoPipe socket pipe.Writer cancellationTokenOption
-            let readerJob = ReadFromPipe pipe.Reader cancellationTokenOption
+            let writerJob = WriteIntoPipe socket pipe.Writer cancellationToken
+            let readerJob = ReadFromPipe pipe.Reader cancellationToken
             let bothJobs = Async.Parallel [writerJob;readerJob]
 
             let! writerAndReaderResults = bothJobs
-            if IsCancelled cancellationTokenOption then
+            if cancellationToken.IsCancellationRequested then
                 return String.Empty
             else
                 let writerResult =  writerAndReaderResults

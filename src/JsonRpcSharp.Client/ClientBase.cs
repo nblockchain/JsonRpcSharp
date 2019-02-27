@@ -79,7 +79,9 @@ namespace JsonRpcSharp.Client
             HandleRpcError(response);
         }
 
-        protected abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage, string route = null, CancellationToken? cancellationToken = null);
+        protected abstract Task<RpcResponseMessage> SendAsync(RpcRequestMessage rpcRequestMessage,
+                                                              string route = null,
+                                                              CancellationToken cancellationToken = default(CancellationToken));
 
         public virtual async Task SendRequestAsync(string method, string route = null, params object[] paramList)
         {
@@ -88,18 +90,15 @@ namespace JsonRpcSharp.Client
             HandleRpcError(response);
         }
 
-        protected CancellationToken GetEffectiveCancellationToken(CancellationToken? providedToken, TimeSpan timeout)
+        protected CancellationToken GetEffectiveCancellationToken(CancellationToken providedToken, TimeSpan timeout)
         {
-            if (providedToken == null)
+            if (providedToken == CancellationToken.None)
             {
                 var cancellationTokenSource = new CancellationTokenSource();
                 cancellationTokenSource.CancelAfter(timeout);
                 return cancellationTokenSource.Token;
             }
-            else
-            {
-                return providedToken.Value;
-            }
+            return providedToken;
         }
     }
 }
