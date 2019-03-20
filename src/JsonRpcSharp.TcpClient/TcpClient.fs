@@ -7,8 +7,31 @@ open System.IO.Pipelines
 open System.Net
 open System.Net.Sockets
 open System.Runtime.InteropServices
+open System.Threading
+open System.Threading.Tasks
 
 exception NoResponseReceivedAfterRequestException
+
+type AsyncExtensions =
+    static member WithWaitCancellation<'T> (task: Task<'T>) (cancellationToken: CancellationToken): Async<'T> =
+        let callback (s: Object) =
+            match s with
+            | :? TaskCompletionSource<unit> as castedTcs ->
+                castedTcs.TrySetResult() |> ignore
+            | _ ->
+                failwith "should have got a parameter of type TaskCompletionSource<unit>"
+            ()
+        async {
+            let tcs = TaskCompletionSource<unit>()
+            use cancelTokenRegistration = cancellationToken.Register(callback, tcs)
+
+            let whenAny = Task.WhenAny(task, tcs.Task)
+            let! firstTask = Async.AwaitTask whenAny
+            if firstTask <> (task :> Task) then
+                return raise <| OperationCanceledException cancellationToken
+
+            return task.Result
+        }
 
 // Translation of https://github.com/davidfowl/TcpEcho/blob/master/src/Program.cs
 // TODO: CONVERT THIS TO BE A CLASS THAT INHERITS FROM ClientBase CLASS
@@ -28,7 +51,18 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
 
     let ReceiveAsync (socket: Socket) memory socketFlags = async {
         let arraySegment = GetArray memory
-        return! socket.ReceiveAsync(arraySegment, socketFlags) |> Async.AwaitTask
+
+        let! cancellationToken = Async.CancellationToken
+        let receiveTask = socket.ReceiveAsync(arraySegment, socketFlags)
+
+        let! bytesReceived =
+            try
+                AsyncExtensions.WithWaitCancellation receiveTask cancellationToken
+            with
+            | :? OperationCanceledException ->
+                socket.Close()
+                reraise()
+        return bytesReceived
     }
 
     let GetAsciiString (buffer: ReadOnlySequence<byte>) =
@@ -132,8 +166,17 @@ type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
             |> Encoding.UTF8.GetBytes
             |> ArraySegment<byte>
 
-        let! _ = socket.SendAsync(buffer, SocketFlags.None) |> Async.AwaitTask
         let! cancellationToken = Async.CancellationToken
+        let sendTask = socket.SendAsync(buffer, SocketFlags.None)
+
+        let! _ =
+            try
+                AsyncExtensions.WithWaitCancellation sendTask cancellationToken
+            with
+            | :? OperationCanceledException ->
+                socket.Close()
+                reraise()
+
         cancellationToken.ThrowIfCancellationRequested()
         let pipe = Pipe()
         let writerJob = WriteIntoPipe socket pipe.Writer
