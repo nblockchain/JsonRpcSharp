@@ -52,6 +52,8 @@ namespace JsonRpcSharp.Client
                 logger.LogRequest(rpcRequestJson);
 
                 var httpResponseMessage = await httpClient.PostAsync(route, httpContent, effectiveCancellationToken).ConfigureAwait(false);
+
+                cancellationToken.ThrowIfCancellationRequested();
                 httpResponseMessage.EnsureSuccessStatusCode();
 
                 var stream = await httpResponseMessage.Content.ReadAsStreamAsync();

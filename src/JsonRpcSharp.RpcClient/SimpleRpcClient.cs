@@ -36,6 +36,8 @@ namespace JsonRpcSharp.Client
                 var effectiveToken = GetEffectiveCancellationToken(cancellationToken, ConnectionTimeout);
                 var httpResponseMessage = await _httpClient.PostAsync(route, httpContent, effectiveToken)
                     .ConfigureAwait(false);
+
+                cancellationToken.ThrowIfCancellationRequested();
                 httpResponseMessage.EnsureSuccessStatusCode();
 
                 var stream = await httpResponseMessage.Content.ReadAsStreamAsync();
