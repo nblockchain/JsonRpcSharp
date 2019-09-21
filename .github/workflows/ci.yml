@@ -10,6 +10,9 @@ jobs:
     - name: Install .Net Core 2.1
       run: |
         ./scripts/install_dotnet_sdk_from_microsoft_deb_packages.sh
+    - name: Install Mono (to have the .NET Framework 4.6 reference assemblies)
+      run: |
+        ./scripts/install_dotnet_sdk_from_microsoft_deb_packages.sh
     - name: Build
       run: |
         dotnet build -p:Configuration=Release
