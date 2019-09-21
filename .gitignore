@@ -282,3 +282,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# githubActions artifacts
+fsx
+nuget.exe
