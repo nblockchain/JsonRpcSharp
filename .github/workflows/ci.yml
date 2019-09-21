@@ -1,0 +1,23 @@
+name: Build and deploy to NuGet
+on: push
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install wget
+      run: sudo apt install -y wget
+    - name: Install .Net Core 2.1
+      run: |
+        ./scripts/install_dotnet_sdk_from_microsoft_deb_packages.sh
+    - name: Build
+      run: |
+        dotnet build -p:Configuration=Release
+    - name: Package
+      run: |
+        nuget pack -p:Configuration=Release -p:Version=0.1.0-date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`
+    - name: Upload
+      run: |
+        if [ ${{ secrets.NUGET_API_KEY }} ] && [ $GITHUB_REF == "refs/heads/master" ]; then
+            dotnet nuget push *.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json
+        fi
