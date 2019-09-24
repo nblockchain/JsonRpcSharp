@@ -11,6 +11,11 @@ open System.Linq
 open FSX.Infrastructure
 open Process
 
+// we need to download nuget.exe because `dotnet pack` doesn't support using standalone (i.e.
+// without a project association) .nuspec files, see https://github.com/NuGet/Home/issues/4254
+let nugetDownloadUri = Uri "https://dist.nuget.org/win-x86-commandline/v4.5.1/nuget.exe"
+Network.DownloadFile nugetDownloadUri
+
 // this is a translation of doing this in unix:
 // 0.1.0-date`date +%Y%m%d-%H%M`.git-`echo $GITHUB_SHA | cut -c 1-7`
 let GetIdealNugetVersion (initialVersion: string) =
