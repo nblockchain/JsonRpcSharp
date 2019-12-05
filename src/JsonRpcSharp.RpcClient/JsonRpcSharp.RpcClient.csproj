@@ -13,7 +13,7 @@
     <ProjectReference Include="..\JsonRpcSharp.Client\JsonRpcSharp.Client.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Net.Http" Version="4.3.3" Condition="'$(TargetFramework)' == 'net46'"/>
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\AssemblyInfo.cs">

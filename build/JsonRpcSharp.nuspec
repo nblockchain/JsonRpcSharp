@@ -24,7 +24,6 @@
                 <dependency id="System.Net.Sockets" version="4.3.0" exclude="Build,Analyzers" />
                 <dependency id="System.IO.Pipelines" version="4.5.3" exclude="Build,Analyzers" />
                 <dependency id="System.IO.Pipes" version="4.3.0" exclude="Build,Analyzers" />
-                <dependency id="System.Net.Http" version="4.0.0" exclude="Build,Analyzers" />
                 <dependency id="System.Net.WebSockets.Client" version="4.3.2" exclude="Build,Analyzers" />
             </group>
             <group targetFramework="netstandard2.0">
@@ -33,7 +32,7 @@
             </group>
         </dependencies>
     </metadata>
-    <files> 
+    <files>
         <!-- TODO: rename RpcClient to HttpClient -->
 
         <!--Net 4.6.0-->
@@ -48,6 +47,6 @@
         <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\netstandard2.0\JsonRpcSharp.IpcClient.dll" target="lib\netstandard2.0" />
         <file src="..\src\JsonRpcSharp.RpcClient\bin\Release\netstandard2.0\JsonRpcSharp.RpcClient.dll" target="lib\netstandard2.0" />
         <file src="..\src\JsonRpcSharp.TcpClient\bin\Release\netstandard2.0\JsonRpcSharp.TcpClient.dll" target="lib\netstandard2.0" />
-        <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\netstandard2.0\JsonRpcSharp.WebSocketClient.dll" target="lib\netstandard2.0" />    
+        <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\netstandard2.0\JsonRpcSharp.WebSocketClient.dll" target="lib\netstandard2.0" />
     </files>
 </package>
