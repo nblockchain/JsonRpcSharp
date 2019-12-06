@@ -4,7 +4,7 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>JsonRpcSharp.Client</AssemblyTitle>
     <VersionPrefix>$(JsonRpcSharpVersion)</VersionPrefix>
-    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <AssemblyName>JsonRpcSharp.Client</AssemblyName>
     <PackageId>JsonRpcSharp.Client</PackageId>
     <PackageTags>Json;RPC</PackageTags>

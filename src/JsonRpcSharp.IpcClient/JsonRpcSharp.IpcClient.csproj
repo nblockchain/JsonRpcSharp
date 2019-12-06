@@ -4,7 +4,7 @@
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>JsonRpcSharp.IpcClient</AssemblyTitle>
     <VersionPrefix>$(JsonRpcSharpVersion)</VersionPrefix>
-    <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
     <AssemblyName>JsonRpcSharp.IpcClient</AssemblyName>
     <PackageId>JsonRpcSharp.IpcClient</PackageId>
     <PackageTags>Json;RPC</PackageTags>
