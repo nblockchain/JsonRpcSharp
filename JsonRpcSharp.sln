@@ -4,6 +4,10 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{962EC435-6130-4B75-BAC1-12323B067443}"
+	ProjectSection(SolutionItems) = preProject
+		src\AssemblyInfo.cs = src\AssemblyInfo.cs
+		src\AssemblyInfo.fs = src\AssemblyInfo.fs
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.Client", "src\JsonRpcSharp.Client\JsonRpcSharp.Client.csproj", "{84A6BAA7-32B3-4D99-9280-87023BFF0A5B}"
 EndProject

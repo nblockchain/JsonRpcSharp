@@ -5,6 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\AssemblyInfo.fs">
+      <Link>AssemblyInfo.fs</Link>
+    </Compile>
     <Compile Include="TcpClient.fs" />
   </ItemGroup>
 
