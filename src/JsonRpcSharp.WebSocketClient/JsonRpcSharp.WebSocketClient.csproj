@@ -13,4 +13,9 @@
     <ProjectReference Include="..\JsonRpcSharp.Client\JsonRpcSharp.Client.csproj" />
     <PackageReference Include="System.Net.WebSockets.Client" Version="4.3.2" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AssemblyInfo.cs">
+      <Link>AssemblyInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
 </Project>

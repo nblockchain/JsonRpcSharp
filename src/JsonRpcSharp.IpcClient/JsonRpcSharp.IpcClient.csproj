@@ -24,4 +24,9 @@
   <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.0'">
     <PackageReference Include="System.Net.Sockets" Version="4.3.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\AssemblyInfo.cs">
+      <Link>AssemblyInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
 </Project>
