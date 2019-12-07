@@ -4,8 +4,8 @@
         <id>JsonRpcSharp</id>
         <version>1.0.0</version>
         <title>JsonRpcSharp</title>
-        <authors>Diginex</authors>
-        <owners>Diginex</owners>
+        <authors>juanblanco, knocte</authors>
+        <owners>knocte</owners>
         <licenseUrl>https://github.com/nblockchain/JsonRpcSharp/blob/master/LICENSE</licenseUrl>
         <projectUrl>https://github.com/nblockchain/JsonRpcSharp</projectUrl>
         <iconUrl>https://github.com/nblockchain/JsonRpcSharp/blob/master/images/icon.png</iconUrl>
