@@ -2,201 +2,123 @@ namespace JsonRpcSharp.TcpClient
 
 open System
 open System.Buffers
-open System.Text
-open System.IO.Pipelines
 open System.Net
 open System.Net.Sockets
-open System.Runtime.InteropServices
-open System.Threading
+open System.IO.Pipelines
+open System.Text
 open System.Threading.Tasks
 
-exception NoResponseReceivedAfterRequestException
+type CommunicationUnsuccessfulException(msg: string, innerException: Exception) =
+    inherit Exception(msg, innerException)
 
-type AsyncExtensions =
-    static member WithWaitCancellation<'T> (task: Task<'T>) (cancellationToken: CancellationToken): Async<'T> =
-        let callback (s: Object) =
-            match s with
-            | :? TaskCompletionSource<unit> as castedTcs ->
-                castedTcs.TrySetResult() |> ignore
-            | _ ->
-                failwith "should have got a parameter of type TaskCompletionSource<unit>"
-            ()
-        async {
-            let tcs = TaskCompletionSource<unit>()
-            use cancelTokenRegistration = cancellationToken.Register(callback, tcs)
+type TimeoutOrResult<'T> =
+    | Timeout
+    | Result of 'T
 
-            let whenAny = Task.WhenAny(task, tcs.Task)
-            let! firstTask = Async.AwaitTask whenAny
-            if firstTask <> (task :> Task) then
-                return raise <| OperationCanceledException cancellationToken
+[<AbstractClass>]
+type JsonRpcClient(resolveHostAsync: unit->Async<IPAddress>, port, timeout: TimeSpan) =
+    let minimumBufferSize = 1024
 
-            return task.Result
+    let withTimeout (timeout: TimeSpan) (job: Async<_>) = async {
+        let read = async {
+            let! value = job
+            return value |> Result |> Some
         }
 
-// Translation of https://github.com/davidfowl/TcpEcho/blob/master/src/Program.cs
-// TODO: CONVERT THIS TO BE A CLASS THAT INHERITS FROM ClientBase CLASS
-type TcpClient (resolveHostAsync: unit->Async<IPAddress>, port) =
+        let delay = async {
+            do! Async.Sleep (int timeout.TotalMilliseconds)
+            return Some Timeout
+        }
 
-    [<Literal>]
-    let minimumBufferSize = 2048
-
-    let GetArrayFromReadOnlyMemory memory: ArraySegment<byte> =
-        match MemoryMarshal.TryGetArray memory with
-        | true, segment -> segment
-        | false, _      -> raise <| InvalidOperationException("Buffer backed by array was expected")
-
-    let GetArray (memory: Memory<byte>) =
-        Memory<byte>.op_Implicit memory
-        |> GetArrayFromReadOnlyMemory
-
-    let ReceiveAsync (socket: Socket) memory socketFlags = async {
-        let arraySegment = GetArray memory
-
-        let! cancellationToken = Async.CancellationToken
-        let receiveTask = socket.ReceiveAsync(arraySegment, socketFlags)
-
-        let! bytesReceived =
-            try
-                AsyncExtensions.WithWaitCancellation receiveTask cancellationToken
-            with
-            | :? OperationCanceledException ->
-                socket.Close()
-                reraise()
-        return bytesReceived
+        let! result = Async.Choice([read; delay])
+        match result with
+        | Some x -> return x
+        | None -> return Timeout
     }
 
-    let GetAsciiString (buffer: ReadOnlySequence<byte>) =
-        // FIXME: in newer versions of F#, this mutable wrapper is not needed (remove when we depend on it)
-        let mutable mutableBuffer = buffer
-
-        // A likely better way of converting this buffer/sequence to a string can be found her:
-        // https://blogs.msdn.microsoft.com/dotnet/2018/07/09/system-io-pipelines-high-performance-io-in-net/
-        // But I cannot find the namespace of the presumably extension method "Create()" on System.String:
-        let bufferArray = System.Buffers.BuffersExtensions.ToArray (& mutableBuffer)
-        System.Text.Encoding.ASCII.GetString bufferArray
-
-    let rec ReadPipeInternal (reader: PipeReader)
-                             (stringBuilder: StringBuilder) = async {
-
-        let! cancellationToken = Async.CancellationToken
-
-        let processLine (line:ReadOnlySequence<byte>) =
-            line |> GetAsciiString |> stringBuilder.AppendLine |> ignore
-
-        let rec keepAdvancingPosition (buffer: ReadOnlySequence<byte>): ReadOnlySequence<byte> =
-            // FIXME: in newer versions of F#, this mutable wrapper is not needed (remove when we depend on it)
-            let mutable mutableBuffer = buffer
-
-            // How to call a ref extension method using extension syntax?
-            let maybePosition = System.Buffers.BuffersExtensions.PositionOf(& mutableBuffer, byte '\n')
-                                |> Option.ofNullable
-            match maybePosition with
-            | None ->
-                buffer
-            | Some pos ->
-                cancellationToken.ThrowIfCancellationRequested()
-                let subBuffer = buffer.Slice(0, pos)
-                cancellationToken.ThrowIfCancellationRequested()
-                processLine subBuffer
-                cancellationToken.ThrowIfCancellationRequested()
-                let nextBuffer = buffer.GetPosition(1L, pos)
-                                 |> buffer.Slice
-                cancellationToken.ThrowIfCancellationRequested()
-                keepAdvancingPosition nextBuffer
-
-        let! result = async { return! (reader.ReadAsync cancellationToken).AsTask() |> Async.AwaitTask }
-
-        let lastBuffer = keepAdvancingPosition result.Buffer
-        cancellationToken.ThrowIfCancellationRequested()
-        reader.AdvanceTo(lastBuffer.Start, lastBuffer.End)
-        cancellationToken.ThrowIfCancellationRequested()
-        if not result.IsCompleted then
-            return! ReadPipeInternal reader stringBuilder
-        else
-            reader.Complete()
-            return stringBuilder.ToString()
+    let unwrapTimeout timeoutMsg job = async {
+        let! maybeRes = job
+        match maybeRes with
+        | Timeout ->
+            let timeoutEx = TimeoutException(timeoutMsg)
+            return raise <| CommunicationUnsuccessfulException(timeoutMsg, timeoutEx)
+        | Result res ->
+            return res
     }
 
-    let ReadFromPipe pipeReader = async {
-        let! result = Async.Catch (ReadPipeInternal pipeReader (StringBuilder()))
-        return result
-    }
+    let rec writeToPipeAsync (writer: PipeWriter) (socket: Socket) = async {
+        try
+            let segment = Array.zeroCreate<byte> minimumBufferSize |> ArraySegment
+            let! read = socket.ReceiveAsync(segment, SocketFlags.None)
+                        |> Async.AwaitTask |> withTimeout timeout |> unwrapTimeout "Socket read timed out"
 
-    let WriteIntoPipe (socket: Socket) (writer: PipeWriter) = async {
-        let rec WritePipeInternal() = async {
-            let! bytesReceived = ReceiveAsync socket (writer.GetMemory minimumBufferSize) SocketFlags.None
-            if bytesReceived > 0 then
-                let! cancellationToken = Async.CancellationToken
-                writer.Advance bytesReceived
-                let! result = (writer.FlushAsync().AsTask() |> Async.AwaitTask)
-                let! result = (writer.FlushAsync cancellationToken).AsTask() |> Async.AwaitTask
-                let dataAvailableInSocket = socket.Available
-                cancellationToken.ThrowIfCancellationRequested()
-                if not (dataAvailableInSocket > 0 && not result.IsCompleted) then
-                    return String.Empty
+            match read with
+            | 0 ->
+                return writer.Complete()
+            | bytesRead ->
+                segment.Array.CopyTo(writer.GetMemory(bytesRead))
+                writer.Advance bytesRead
+                let! flusher = writer.FlushAsync().AsTask() |> Async.AwaitTask
+                if flusher.IsCompleted then
+                    return writer.Complete()
                 else
-                    return! WritePipeInternal()
-            else
-                return raise NoResponseReceivedAfterRequestException
+                    return! writeToPipeAsync writer socket
+        with
+        | ex -> return writer.Complete(ex)
+    }
+
+    let rec readFromPipeAsync (reader: PipeReader) (state: StringBuilder * int) = async {
+        let! result = reader.ReadAsync().AsTask() |> Async.AwaitTask
+
+        let buffer: ReadOnlySequence<byte> = result.Buffer
+        let sb = fst state
+
+        let str = buffer |> ref |> BuffersExtensions.ToArray |> Encoding.UTF8.GetString
+        str |> sb.Append |> ignore
+        let bracesCount = str |> Seq.sumBy (function | '{' -> 1 | '}' -> -1 | _ -> 0)
+
+        reader.AdvanceTo(buffer.End)
+
+        let braces = (snd state) + bracesCount
+        if result.IsCompleted || braces = 0 then
+            return sb.ToString()
+        else
+            return! readFromPipeAsync reader (sb, braces)
+    }
+
+    let RequestImplAsync (json: string) =
+        async {
+            let! endpoint = resolveHostAsync() |> withTimeout timeout |> unwrapTimeout "Name resolution timed out"
+
+            use socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
+            let! connect = socket.ConnectAsync(endpoint, port)
+                           |> Async.AwaitTask |> withTimeout timeout |> unwrapTimeout "Socket connect timed out"
+            let segment = UTF8Encoding.UTF8.GetBytes(json + Environment.NewLine) |> ArraySegment
+
+            let! send = socket.SendAsync(segment, SocketFlags.None)
+                        |> Async.AwaitTask |> withTimeout timeout |> unwrapTimeout "Socket send timed out"
+            let pipe = Pipe()
+
+            let! _ = writeToPipeAsync pipe.Writer socket |> Async.StartChild
+            return! readFromPipeAsync pipe.Reader (StringBuilder(), 0)
         }
-        let! result = Async.Catch (WritePipeInternal())
-        writer.Complete()
-        return result
-    }
 
-    let Connect () = async {
-        let! host = resolveHostAsync()
-        let socket = new Socket(SocketType.Stream,
-                                ProtocolType.Tcp)
-                                // Not using timeout properties on Socket because FillPipeAsync retrieves data
-                                // in a Task which we have timeout itself. But keep in mind that these socket
-                                // timeout properties exist, and may prove to have some use:
-                                //, SendTimeout = defaultNetworkTimeout, ReceiveTimeout = defaultNetworkTimeout)
+    abstract member RequestAsync: string -> Async<string>
+    abstract member RequestAsyncAsTask: string -> Task<string>
 
-        do! socket.ConnectAsync(host, port) |> Async.AwaitTask
-        return socket
-    }
-
-    new(host: IPAddress, port: int) = new TcpClient((fun _ -> async { return host }), port)
-
-    member __.Request (request: string): Async<string> = async {
-        use! socket = Connect()
-        let buffer =
-            request + "\n"
-            |> Encoding.UTF8.GetBytes
-            |> ArraySegment<byte>
-
-        let! cancellationToken = Async.CancellationToken
-        let sendTask = socket.SendAsync(buffer, SocketFlags.None)
-
-        let! _ =
+    default __.RequestAsync (json: string) =
+        async {
             try
-                AsyncExtensions.WithWaitCancellation sendTask cancellationToken
+                return! RequestImplAsync json
             with
-            | :? OperationCanceledException ->
-                socket.Close()
-                reraise()
+            | :? AggregateException as ae when ae.Flatten().InnerExceptions
+                    |> Seq.exists (fun x -> x :? SocketException ||
+                                            x :? TimeoutException ||
+                                            x :? CommunicationUnsuccessfulException) ->
+                return raise <| CommunicationUnsuccessfulException(ae.Message, ae)
+            | :? SocketException as ex ->
+                return raise <| CommunicationUnsuccessfulException(ex.Message, ex)
+        }
 
-        cancellationToken.ThrowIfCancellationRequested()
-        let pipe = Pipe()
-        let writerJob = WriteIntoPipe socket pipe.Writer
-        let readerJob = ReadFromPipe pipe.Reader
-        let bothJobs = Async.Parallel [writerJob;readerJob]
-
-        let! writerAndReaderResults = bothJobs
-        cancellationToken.ThrowIfCancellationRequested()
-        let writerResult =  writerAndReaderResults
-                            |> Seq.head
-        let readerResult =  writerAndReaderResults
-                            |> Seq.last
-
-        return match writerResult with
-               | Choice1Of2 _ ->
-                   match readerResult with
-                   // reading result
-                   | Choice1Of2 str -> str
-                   // possible reader pipe exception
-                   | Choice2Of2 ex -> raise ex
-               // possible socket reading exception
-               | Choice2Of2 ex -> raise ex
-    }
+    default self.RequestAsyncAsTask (json: string) =
+        self.RequestAsync json |> Async.StartAsTask
