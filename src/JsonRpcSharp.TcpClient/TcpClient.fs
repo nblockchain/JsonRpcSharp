@@ -70,10 +70,10 @@ type JsonRpcClient(resolveHostAsync: unit->Async<IPAddress>, port, timeout: Time
     let rec readFromPipeAsync (reader: PipeReader) (state: StringBuilder * int) = async {
         let! result = reader.ReadAsync().AsTask() |> Async.AwaitTask
 
-        let buffer: ReadOnlySequence<byte> = result.Buffer
+        let mutable buffer = result.Buffer
         let sb = fst state
 
-        let str = buffer |> ref |> BuffersExtensions.ToArray |> Encoding.UTF8.GetString
+        let str = BuffersExtensions.ToArray(& buffer) |> Encoding.UTF8.GetString
         str |> sb.Append |> ignore
         let bracesCount = str |> Seq.sumBy (function | '{' -> 1 | '}' -> -1 | _ -> 0)
 
