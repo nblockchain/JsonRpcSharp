@@ -57,17 +57,20 @@ type JsonRpcClient(resolveHostAsync: unit->Async<IPAddress>, port, timeout: Time
             | bytesRead ->
                 segment.Array.CopyTo(writer.GetMemory(bytesRead))
                 writer.Advance bytesRead
-                let! flusher = writer.FlushAsync().AsTask() |> Async.AwaitTask
+                let! cancelToken = Async.CancellationToken
+                let! flusher = (writer.FlushAsync cancelToken).AsTask() |> Async.AwaitTask
                 if flusher.IsCompleted then
                     return writer.Complete()
                 else
+                    cancelToken.ThrowIfCancellationRequested()
                     return! writeToPipeAsync writer socket
         with
         | ex -> return writer.Complete(ex)
     }
 
     let rec readFromPipeAsync (reader: PipeReader) (state: StringBuilder * int) = async {
-        let! result = reader.ReadAsync().AsTask() |> Async.AwaitTask
+        let! cancelToken = Async.CancellationToken
+        let! result = (reader.ReadAsync cancelToken).AsTask() |> Async.AwaitTask
 
         let mutable buffer = result.Buffer
         let sb = fst state
@@ -82,6 +85,7 @@ type JsonRpcClient(resolveHostAsync: unit->Async<IPAddress>, port, timeout: Time
         if result.IsCompleted || braces = 0 then
             return sb.ToString()
         else
+            cancelToken.ThrowIfCancellationRequested()
             return! readFromPipeAsync reader (sb, braces)
     }
 
@@ -89,15 +93,22 @@ type JsonRpcClient(resolveHostAsync: unit->Async<IPAddress>, port, timeout: Time
         async {
             let! endpoint = resolveHostAsync() |> withTimeout timeout |> unwrapTimeout "Name resolution timed out"
 
+            let! cancelToken = Async.CancellationToken
+            cancelToken.ThrowIfCancellationRequested()
+
             use socket = new Socket(SocketType.Stream, ProtocolType.Tcp)
             let! connect = socket.ConnectAsync(endpoint, port)
                            |> Async.AwaitTask |> withTimeout timeout |> unwrapTimeout "Socket connect timed out"
-            let segment = UTF8Encoding.UTF8.GetBytes(json + Environment.NewLine) |> ArraySegment
 
+            cancelToken.ThrowIfCancellationRequested()
+
+            let segment = UTF8Encoding.UTF8.GetBytes(json + Environment.NewLine) |> ArraySegment
             let! send = socket.SendAsync(segment, SocketFlags.None)
                         |> Async.AwaitTask |> withTimeout timeout |> unwrapTimeout "Socket send timed out"
-            let pipe = Pipe()
 
+            cancelToken.ThrowIfCancellationRequested()
+
+            let pipe = Pipe()
             let! _ = writeToPipeAsync pipe.Writer socket |> Async.StartChild
             return! readFromPipeAsync pipe.Reader (StringBuilder(), 0)
         }
