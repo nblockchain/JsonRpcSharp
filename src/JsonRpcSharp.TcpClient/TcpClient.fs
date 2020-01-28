@@ -15,7 +15,6 @@ type TimeoutOrResult<'T> =
     | Timeout
     | Result of 'T
 
-[<AbstractClass>]
 type JsonRpcClient(resolveHostAsync: unit->Async<IPAddress>, port, timeout: TimeSpan) =
     let minimumBufferSize = 1024
 
