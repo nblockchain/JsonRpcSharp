@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +12,24 @@ using Newtonsoft.Json;
 
 namespace JsonRpcSharp.Client
 {
+    [Serializable]
+    public class DeserializationException : Exception
+    {
+        public DeserializationException()
+        {
+        }
+
+
+        public DeserializationException(string originalText, Exception innerException)
+            : base("Couldn't deserialize to JSON: " + originalText, innerException)
+        {
+        }
+
+        protected DeserializationException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+    }
+
     public class RpcClient : ClientBase
     {
         private const int NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT = 60;
@@ -61,7 +80,28 @@ namespace JsonRpcSharp.Client
                 using (var reader = new JsonTextReader(streamReader))
                 {
                     var serializer = JsonSerializer.Create(_jsonSerializerSettings);
-                    var message =  serializer.Deserialize<RpcResponseMessage>(reader);
+                    RpcResponseMessage message;
+                    try
+                    {
+                        message = serializer.Deserialize<RpcResponseMessage>(reader);
+                    }
+                    catch (JsonReaderException e)
+                    {
+                        streamReader.DiscardBufferedData();
+                        streamReader.BaseStream.Seek(0, SeekOrigin.Begin);
+                        var originalText = streamReader.ReadToEnd();
+                        throw new DeserializationException(originalText, e);
+                    }
+                    /* for debugging purposes
+                    finally
+                    {
+                        streamReader.DiscardBufferedData();
+                        streamReader.BaseStream.Seek(0, SeekOrigin.Begin);
+                        var originalText = streamReader.ReadToEnd();
+                        Console.WriteLine("_________DEBUG:" + originalText);
+                        Console.Out.Flush();
+                    }
+                    */
 
                     logger.LogResponse(message);
                     
