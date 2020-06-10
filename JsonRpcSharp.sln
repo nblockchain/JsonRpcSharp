@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.Client", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.IpcClient", "src\JsonRpcSharp.IpcClient\JsonRpcSharp.IpcClient.csproj", "{3D85110C-80C3-4136-A828-22CB066362A0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.RpcClient", "src\JsonRpcSharp.RpcClient\JsonRpcSharp.RpcClient.csproj", "{3F8D6B13-B483-4873-8946-106D25BF6212}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.HttpClient", "src\JsonRpcSharp.HttpClient\JsonRpcSharp.HttpClient.csproj", "{3F8D6B13-B483-4873-8946-106D25BF6212}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonRpcSharp.WebSocketClient", "src\JsonRpcSharp.WebSocketClient\JsonRpcSharp.WebSocketClient.csproj", "{82A720E5-CF5C-4963-86CE-BEEE3040B413}"
 EndProject

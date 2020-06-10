@@ -9,12 +9,12 @@ using Newtonsoft.Json;
 
 namespace JsonRpcSharp.Client
 {
-    public class SimpleRpcClient : ClientBase
+    public class SimpleHttpClient : ClientBase
     {
         private readonly JsonSerializerSettings _jsonSerializerSettings;
-        private readonly HttpClient _httpClient;
+        private readonly System.Net.Http.HttpClient _httpClient;
 
-        public SimpleRpcClient(Uri baseUrl, HttpClient httpClient,
+        public SimpleHttpClient(Uri baseUrl, System.Net.Http.HttpClient httpClient,
             JsonSerializerSettings jsonSerializerSettings = null)
         { 
             if (jsonSerializerSettings == null)

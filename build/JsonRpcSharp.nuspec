@@ -33,19 +33,17 @@
         </dependencies>
     </metadata>
     <files> 
-        <!-- TODO: rename RpcClient to HttpClient -->
-
         <!--Net 4.6.0-->
         <file src="..\src\JsonRpcSharp.Client\bin\Release\net46\JsonRpcSharp.Client.dll" target="lib\net46" />
         <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\net46\JsonRpcSharp.IpcClient.dll" target="lib\net46" />
-        <file src="..\src\JsonRpcSharp.RpcClient\bin\Release\net46\JsonRpcSharp.RpcClient.dll" target="lib\net46" />
+        <file src="..\src\JsonRpcSharp.HttpClient\bin\Release\net46\JsonRpcSharp.HttpClient.dll" target="lib\net46" />
         <file src="..\src\JsonRpcSharp.TcpClient\bin\Release\net46\JsonRpcSharp.TcpClient.dll" target="lib\net46" />
         <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\net46\JsonRpcSharp.WebSocketClient.dll" target="lib\net46" />
 
         <!--netstandard2.0-->
         <file src="..\src\JsonRpcSharp.Client\bin\Release\netstandard2.0\JsonRpcSharp.Client.dll" target="lib\netstandard2.0" />
         <file src="..\src\JsonRpcSharp.IpcClient\bin\Release\netstandard2.0\JsonRpcSharp.IpcClient.dll" target="lib\netstandard2.0" />
-        <file src="..\src\JsonRpcSharp.RpcClient\bin\Release\netstandard2.0\JsonRpcSharp.RpcClient.dll" target="lib\netstandard2.0" />
+        <file src="..\src\JsonRpcSharp.HttpClient\bin\Release\netstandard2.0\JsonRpcSharp.HttpClient.dll" target="lib\netstandard2.0" />
         <file src="..\src\JsonRpcSharp.TcpClient\bin\Release\netstandard2.0\JsonRpcSharp.TcpClient.dll" target="lib\netstandard2.0" />
         <file src="..\src\JsonRpcSharp.WebSocketClient\bin\Release\netstandard2.0\JsonRpcSharp.WebSocketClient.dll" target="lib\netstandard2.0" />    
     </files>

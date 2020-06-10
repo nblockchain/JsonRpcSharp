@@ -30,7 +30,7 @@ namespace JsonRpcSharp.Client
         }
     }
 
-    public class RpcClient : ClientBase
+    public class HttpClient : ClientBase
     {
         private const int NUMBER_OF_SECONDS_TO_RECREATE_HTTP_CLIENT = 60;
         private readonly AuthenticationHeaderValue _authHeaderValue;
@@ -39,13 +39,13 @@ namespace JsonRpcSharp.Client
         private readonly ILog _log;
         private readonly JsonSerializerSettings _jsonSerializerSettings;
         private volatile bool _firstHttpClient;
-        private HttpClient _httpClient;
-        private HttpClient _httpClient2;
+        private System.Net.Http.HttpClient _httpClient;
+        private System.Net.Http.HttpClient _httpClient2;
         private DateTime _httpClientLastCreatedAt;
         private readonly object _lockObject = new object();
 
-        public RpcClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null,
-            JsonSerializerSettings jsonSerializerSettings = null, HttpClientHandler httpClientHandler = null, ILog log = null)
+        public HttpClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null,
+            JsonSerializerSettings jsonSerializerSettings = null, System.Net.Http.HttpClientHandler httpClientHandler = null, ILog log = null)
         {
             _baseUrl = baseUrl;
             _authHeaderValue = authHeaderValue;
@@ -121,7 +121,7 @@ namespace JsonRpcSharp.Client
 
        
 
-        private HttpClient GetOrCreateHttpClient()
+        private System.Net.Http.HttpClient GetOrCreateHttpClient()
         {
             lock (_lockObject)
             {
@@ -132,7 +132,7 @@ namespace JsonRpcSharp.Client
             }
         }
 
-        private HttpClient GetClient()
+        private System.Net.Http.HttpClient GetClient()
         {
             lock (_lockObject)
             {
@@ -142,7 +142,7 @@ namespace JsonRpcSharp.Client
 
         private void CreateNewHttpClient()
         {
-            var httpClient = _httpClientHandler != null ? new HttpClient(_httpClientHandler) : new HttpClient();
+            var httpClient = _httpClientHandler != null ? new System.Net.Http.HttpClient(_httpClientHandler) : new System.Net.Http.HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = _authHeaderValue;
             httpClient.BaseAddress = _baseUrl;
             _httpClientLastCreatedAt = DateTime.UtcNow;

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>JsonRpcSharp.Client core library to use in conjunction with either the JsonRpcSharp.RpcClient, the JsonRpcSharp.IpcClient or other custom Rpc provider</Description>
+    <Description>JsonRpcSharp.Client core library to use in conjunction with either the JsonRpcSharp.HttpClient, the JsonRpcSharp.IpcClient or other custom Rpc provider</Description>
     <Copyright>Juan Blanco</Copyright>
     <AssemblyTitle>JsonRpcSharp.Client</AssemblyTitle>
     <VersionPrefix>$(JsonRpcSharpVersion)</VersionPrefix>
