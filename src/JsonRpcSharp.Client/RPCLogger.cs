@@ -41,6 +41,9 @@ namespace JsonRpcSharp.Client
 
         public void LogResponse(RpcResponseMessage responseMessage)
         {
+            if (responseMessage == null)
+                throw new ArgumentNullException(nameof(responseMessage));
+
             ResponseMessage = responseMessage;
 
             if (IsLogTraceEnabled())

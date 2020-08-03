@@ -25,6 +25,11 @@ namespace JsonRpcSharp.Client
         {
         }
 
+        public DeserializationException(string originalText)
+            : base("Couldn't deserialize to JSON (result was null): " + originalText)
+        {
+        }
+
         protected DeserializationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -57,6 +62,15 @@ namespace JsonRpcSharp.Client
             CreateNewHttpClient();
         }
 
+        private string GetOriginalText(StreamReader streamReader)
+        {
+            if (streamReader == null)
+                throw new ArgumentNullException(nameof(streamReader));
+            streamReader.DiscardBufferedData();
+            streamReader.BaseStream.Seek(0, SeekOrigin.Begin);
+            return streamReader.ReadToEnd();
+        }
+
         protected override async Task<RpcResponseMessage> SendAsync(RpcRequestMessage request,
                                                                     string route = null,
                                                                     CancellationToken cancellationToken = default(CancellationToken))
@@ -87,9 +101,7 @@ namespace JsonRpcSharp.Client
                     }
                     catch (JsonReaderException e)
                     {
-                        streamReader.DiscardBufferedData();
-                        streamReader.BaseStream.Seek(0, SeekOrigin.Begin);
-                        var originalText = streamReader.ReadToEnd();
+                        var originalText = GetOriginalText(streamReader);
                         throw new DeserializationException(originalText, e);
                     }
                     /* for debugging purposes
@@ -102,6 +114,12 @@ namespace JsonRpcSharp.Client
                         Console.Out.Flush();
                     }
                     */
+
+                    if (message == null)
+                    {
+                        var originalText = GetOriginalText(streamReader);
+                        throw new DeserializationException(originalText);
+                    }
 
                     logger.LogResponse(message);
                     
