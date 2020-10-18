@@ -9,7 +9,7 @@ namespace JsonRpcSharp.Client
     public abstract class ClientBase : IClient
     {
 
-        public static TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
+        public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(20.0);
 
         public RequestInterceptor OverridingRequestInterceptor { get; set; }
 

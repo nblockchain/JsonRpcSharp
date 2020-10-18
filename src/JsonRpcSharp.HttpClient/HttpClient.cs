@@ -49,7 +49,7 @@ namespace JsonRpcSharp.Client
         private DateTime _httpClientLastCreatedAt;
         private readonly object _lockObject = new object();
 
-        public HttpClient(Uri baseUrl, AuthenticationHeaderValue authHeaderValue = null,
+        public HttpClient(Uri baseUrl, TimeSpan connectionTimeout, AuthenticationHeaderValue authHeaderValue = null,
             JsonSerializerSettings jsonSerializerSettings = null, System.Net.Http.HttpClientHandler httpClientHandler = null, ILog log = null)
         {
             _baseUrl = baseUrl;
@@ -60,6 +60,7 @@ namespace JsonRpcSharp.Client
             _httpClientHandler = httpClientHandler;
             _log = log;
             CreateNewHttpClient();
+            this.ConnectionTimeout = connectionTimeout;
         }
 
         private string GetOriginalText(StreamReader streamReader)
