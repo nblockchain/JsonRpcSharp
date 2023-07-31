@@ -105,6 +105,11 @@ namespace JsonRpcSharp.Client
                         var originalText = GetOriginalText(streamReader);
                         throw new DeserializationException(originalText, e);
                     }
+                    catch (JsonSerializationException e)
+                    {
+                        var originalText = GetOriginalText(streamReader);
+                        throw new DeserializationException(originalText, e);
+                    }
                     /* for debugging purposes
                     finally
                     {
