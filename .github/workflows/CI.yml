@@ -1,5 +1,14 @@
 name: Build and deploy to NuGet
-on: push
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+  # see https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#schedule
+  schedule:
+    # daily
+    - cron: "0 0 * * *"
 
 jobs:
   build_and_deploy:
@@ -13,6 +22,7 @@ jobs:
       run: |
         dotnet build -p:Configuration=Release
     - name: Package and upload
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
       run: |
         git clone https://github.com/nblockchain/fsx
         fsx\Tools\fsi.bat fsx\Tools\nugetPush.fsx $env:BASE_VERSION ${{secrets.NUGET_API_KEY}}
